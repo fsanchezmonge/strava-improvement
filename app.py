@@ -144,11 +144,13 @@ def save_activities_to_supabase(activities, athlete_id):
         ).execute()
 
 def main():
-    st.title("Ha millorat el meu estat de forma?")
+    st.title("Com puc saber si estic millorant?")
     """    
-    Si tens un objectiu, és important revisar si el teu entrenament està funcionant per fer ajustos si és necessari.
+    Si tens un objectiu, és important revisar si el teu entrenament està funcionant i adaptar-ho si és necessari.
     
+    Segueix les passes següents per veure diferents aspectes de la teva evolució. Recorda que cada atleta és diferent i és important tenir en compte aspectes externs a l'entrenament com l'estil de vida, el teu historial esportiu, etc.
     """
+    df = None
     with st.container(border=True):
         """
         1. Conecta el teu perfil d'Strava. Fes click al botó i autoritza l'accés a les dades del teu perfil.
@@ -165,22 +167,19 @@ def main():
         
         if 'code' in query_params:
             code = query_params.get("code", [])
-            with st.spinner('Authenticating with Strava...'):
+            with st.spinner('Connectant amb Strava...'):
                 try:
                     token_response = get_token(code)
-                    st.write(token_response)
                     if 'access_token' in token_response:
                         st.session_state.access_token = token_response['access_token']
                         st.session_state.athlete_id = token_response['athlete']['id']
-                        st.write(st.session_state.athlete_id)
                         save_token_to_supabase(token_response)
                         st.query_params.clear()
-                        st.success('Successfully authenticated with Strava!')
                         st.rerun()
                     else:
-                        st.error(f"Authentication failed: {token_response.get('error', 'Unknown error')}")
+                        st.error(f"Error en la connexió: {token_response.get('error', 'Error desconegut')}")
                 except Exception as e:
-                    st.error(f"Error during authentication: {str(e)}")
+                    st.error(f"Error durant la connexió: {str(e)}")
         
         # Try to get stored token if we don't have one in session
         if st.session_state.access_token is None and st.session_state.athlete_id is not None:
@@ -216,80 +215,209 @@ def main():
     
         # Save to Supabase
         #save_activities_to_supabase(activities, st.session_state.athlete_id)
-    with st.container(border=True):
+    if df is not None:
+        with st.container(border=True):
+            """
+            2. Selecciona el període que vols analitzar:
+            """
+            # Add date filter
+            col1, col2 = st.columns(2)
+            with col1:
+                selected_dates = st.date_input(
+                    "",
+                    value=(pd.to_datetime('now').date() - pd.DateOffset(days=30),pd.to_datetime('now').date()),
+                    min_value=pd.to_datetime('now').date() - pd.DateOffset(days=30),
+                    max_value=pd.to_datetime('now').date(),
+                    label_visibility="collapsed"
+                )
+
+        # Convert datetime_local to datetime for filtering
+        df['datetime_local'] = pd.to_datetime(df['datetime_local'])
+        
+        # Filter DataFrame based on selected dates and Sport = Run
+        mask = (df['datetime_local'].dt.date >= selected_dates[0]) & (df['datetime_local'].dt.date <= selected_dates[1])
+        df_filtered = df[mask]
+
+        #st.dataframe(df_filtered)
+
         """
-        2. Selecciona el període que vols analitzar:
+        ## Analitza els resultats
+
         """
-        # Add date filter
-        col1, col2 = st.columns(2)
-        with col1:
-            selected_dates = st.date_input(
-                "",
-                value=(pd.to_datetime('now').date() - pd.DateOffset(days=30),pd.to_datetime('now').date()),
-                min_value=pd.to_datetime('now').date() - pd.DateOffset(days=30),
-                max_value=pd.to_datetime('now').date(),
-                label_visibility="collapsed"
+        
+        """
+        ### **Volum**
+        **Incrementar gradualment** (no es recomana més d'un 10% inter-setmanal) i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma.
+
+        Aquest [estudi](https://pubmed.ncbi.nlm.nih.gov/32421886/) on s'examinava volum mitjà setmanal i sortida més llarga de 556 participants d'una mitja marató i 441 d'una marató, va trobar **una correlació alta entre volums d'entrenament alts i els temps la prova més baixos**.
+        
+        """
+        # Create tabs for distance and time charts
+        tab1, tab2 = st.tabs(["📏 Distància", "⏱️ Temps"])
+
+        # Group by week and sum distances
+        weekly_distance = df_filtered.groupby(df_filtered['datetime_local'].dt.isocalendar().week).agg({
+            'distance': 'sum',
+            'moving_time': 'sum'
+        }).reset_index()
+        weekly_distance.columns = ['Week', 'Distance', 'Time']
+
+        with tab1:
+            # Create the distance bar chart
+            fig_distance = go.Figure(data=[
+                go.Bar(
+                    x=weekly_distance['Week'],
+                    y=weekly_distance['Distance'],
+                    text=weekly_distance['Distance'].round(1),
+                    textposition='auto',
+                )
+            ])
+            
+            # Update layout
+            fig_distance.update_layout(
+                title='Distància setmanal (km)',
+                xaxis_title='Setmana',
+                yaxis_title='Distància (km)',
+                showlegend=False,
+                plot_bgcolor='white'
             )
+            
+            # Update axes
+            fig_distance.update_xaxes(
+                showgrid=False,
+                gridwidth=1,
+                gridcolor='LightGray'
+            )
+            fig_distance.update_yaxes(
+                showgrid=False,
+                gridwidth=1,
+                gridcolor='LightGray',
+                zeroline=True,
+                zerolinewidth=1,
+                zerolinecolor='LightGray'
+            )
+            
+            st.plotly_chart(fig_distance, use_container_width=True)
 
-    # Convert datetime_local to datetime for filtering
-    df['datetime_local'] = pd.to_datetime(df['datetime_local'])
-    
-    # Filter DataFrame based on selected dates and Sport = Run
-    mask = (df['datetime_local'].dt.date >= selected_dates[0]) & (df['datetime_local'].dt.date <= selected_dates[1])
-    df_filtered = df[mask]
+        with tab2:
+            # Convert minutes to hours for better readability
+            weekly_distance['Time'] = weekly_distance['Time'] / 60  # Convert to hours
+            
+            # Create the time bar chart
+            fig_time = go.Figure(data=[
+                go.Bar(
+                    x=weekly_distance['Week'],
+                    y=weekly_distance['Time'],
+                    text=weekly_distance['Time'].round(1),
+                    textposition='auto',
+                )
+            ])
+            
+            # Update layout
+            fig_time.update_layout(
+                title='Temps setmanal (hores)',
+                xaxis_title='Setmana',
+                yaxis_title='Temps (h)',
+                showlegend=False,
+                plot_bgcolor='white'
+            )
+            
+            # Update axes
+            fig_time.update_xaxes(
+                showgrid=False,
+                gridwidth=1,
+                gridcolor='LightGray'
+            )
+            fig_time.update_yaxes(
+                showgrid=False,
+                gridwidth=1,
+                gridcolor='LightGray',
+                zeroline=True,
+                zerolinewidth=1,
+                zerolinecolor='LightGray'
+            )
+            
+            st.plotly_chart(fig_time, use_container_width=True)
 
-    #st.dataframe(df_filtered)
+        """
+        A l'estudi mencionat, també s'observa relació entre el rendiment i la distància de la sortida més llarga. A continuació, pots veure les sortides més llargues de cada setmana.
 
-    """
-    #### Analitza els resultats
+        Algunes preguntes que et podries fer:
 
-    """
-    
-    """
-    ##### **Volum**
-    **Incrementar gradualment** (no es recomana més d'un 10% inter-setmanal) i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma.
+            - Ha incrementat la distància amb el temps?
 
-    Un [estudi](https://pubmed.ncbi.nlm.nih.gov/32421886/) on s'examinaven lesions relacionades amb l'entrenament, volum mitjà setmanal i sortida més llarga de 556 participants d'una mitja marató i 441 d'una marató, va trobar **una correlació alta entre volums d'entrenament alts i els temps la prova més baixos**.
+            - Has estat capaç de mantenir un ritme semblant tot i incrementar la distància?
+        
+        Per properes sortides, és molt útil prendre consciència de com reacciona el teu cos a aquests esforços. Si l'entrenament està fent efecte, hauries de recuperar-te més fàcilment a mesura que passa el temps per esforços similars.
 
-    """
-    
-    # Create tabs for distance and time charts
-    tab1, tab2 = st.tabs(["📏 Distància", "⏱️ Temps"])
+        """
+        
+        # Get longest activity per week
+        longest_runs = df_filtered.groupby(df_filtered['datetime_local'].dt.isocalendar().week).apply(
+            lambda x: x.nlargest(1, 'distance')
+        ).reset_index(drop=True)
 
-    # Group by week and sum distances
-    weekly_distance = df_filtered.groupby(df_filtered['datetime_local'].dt.isocalendar().week).agg({
-        'distance': 'sum',
-        'moving_time': 'sum'
-    }).reset_index()
-    weekly_distance.columns = ['Week', 'Distance', 'Time']
+        # Select columns for display
+        longest_runs_display = longest_runs[[
+            'datetime_local', 'name', 'distance', 'moving_time', 'average_speed'
+        ]].copy()
 
-    with tab1:
-        # Create the distance bar chart
-        fig_distance = go.Figure(data=[
-            go.Bar(
-                x=weekly_distance['Week'],
-                y=weekly_distance['Distance'],
-                text=weekly_distance['Distance'].round(1),
-                textposition='auto',
+        # Format the columns
+        longest_runs_display['datetime_local'] = longest_runs_display['datetime_local'].dt.strftime('%d/%m/%Y')
+
+        # Format moving time to hours and minutes
+        longest_runs_display['moving_time'] = longest_runs_display['moving_time'].apply(
+            lambda x: f"{int(x//60)}h{int(x%60)}min" if x >= 60 else f"{int(x)}min"
+        )
+
+        longest_runs_display['distance'] = longest_runs_display['distance'].apply(lambda x: f"{x:.1f} km")
+
+        # Convert speed (km/h) to pace (min/km)
+        longest_runs_display['average_speed'] = longest_runs_display['average_speed'].apply(
+            lambda x: f"{int((60/x))}:{int((60/x)%1 * 60):02d} min/km"
+        )
+
+        # Rename columns
+        longest_runs_display.columns = ['Data', 'Nom', 'Distància', 'Temps', 'Ritme']
+
+        # Sort by distance (need to create temporary numeric column for sorting)
+        longest_runs_display['sort_distance'] = longest_runs['distance']
+        longest_runs_display = longest_runs_display.sort_values('sort_distance', ascending=False).drop('sort_distance', axis=1)
+
+        # Display the dataframe
+        st.dataframe(longest_runs_display, use_container_width=True)
+
+        # Create line chart for longest runs
+        fig_longest = go.Figure(data=[
+            go.Scatter(
+                x=longest_runs['datetime_local'],
+                y=longest_runs['distance'],
+                mode='lines+markers+text',
+                text=longest_runs['distance'].round(1),
+                textposition='top center',
+                hovertemplate='%{x|%d/%m/%Y}<br>Distància: %{y:.1f} km<extra></extra>'
             )
         ])
-        
+
         # Update layout
-        fig_distance.update_layout(
-            title='Distància setmanal (km)',
-            xaxis_title='Setmana',
+        fig_longest.update_layout(
+            title='Evolució de la distància de les sortides més llargues',
+            xaxis_title='Data',
             yaxis_title='Distància (km)',
             showlegend=False,
-            plot_bgcolor='white'
+            plot_bgcolor='white',
+            yaxis=dict(
+                range=[0, longest_runs['distance'].max() * 1.2]  # Add 10% padding to max value
+            )
         )
-        
+
         # Update axes
-        fig_distance.update_xaxes(
+        fig_longest.update_xaxes(
             showgrid=False,
             gridwidth=1,
             gridcolor='LightGray'
         )
-        fig_distance.update_yaxes(
+        fig_longest.update_yaxes(
             showgrid=False,
             gridwidth=1,
             gridcolor='LightGray',
@@ -297,39 +425,51 @@ def main():
             zerolinewidth=1,
             zerolinecolor='LightGray'
         )
-        
-        st.plotly_chart(fig_distance, use_container_width=True)
 
-    with tab2:
-        # Convert minutes to hours for better readability
-        weekly_distance['Time'] = weekly_distance['Time'] / 60  # Convert to hours
+        st.plotly_chart(fig_longest, use_container_width=True)
+
+        """
+        ### **Freqüència**
+
+        La **freqüencia**, juntament amb el **volum** i la **intensitat**, és una altra variable que podem modificar per incrementar la càrrega d'entrenament.
+
+        Cada entrenament actúa com un estressor sobre el teu cos que desencadena diferents respostes (hormonals, metabòliques, etc.) i que acaba produïnt les adaptacions que et fan millorar.  
+
+        Una major freqüència d'entrenament pot ser beneficiosa perquè produeix estímuls més constants i distribueix millor la fatiga, evitant sessions amb una càrrega excessiva.
+
+        No obstant, el més important és ser consistent i trobar la distribució que et permeti entrenar de forma continuada en el temps.
+        """
         
-        # Create the time bar chart
-        fig_time = go.Figure(data=[
+        # Count sessions per week
+        weekly_sessions = df_filtered.groupby(df_filtered['datetime_local'].dt.isocalendar().week).size().reset_index()
+        weekly_sessions.columns = ['Week', 'Sessions']
+
+        # Create the sessions bar chart
+        fig_sessions = go.Figure(data=[
             go.Bar(
-                x=weekly_distance['Week'],
-                y=weekly_distance['Time'],
-                text=weekly_distance['Time'].round(1),
+                x=weekly_sessions['Week'],
+                y=weekly_sessions['Sessions'],
+                text=weekly_sessions['Sessions'],
                 textposition='auto',
             )
         ])
         
         # Update layout
-        fig_time.update_layout(
-            title='Temps setmanal (hores)',
+        fig_sessions.update_layout(
+            title='Sessions per setmana',
             xaxis_title='Setmana',
-            yaxis_title='Temps (h)',
+            yaxis_title='Nombre de sessions',
             showlegend=False,
             plot_bgcolor='white'
         )
         
         # Update axes
-        fig_time.update_xaxes(
+        fig_sessions.update_xaxes(
             showgrid=False,
             gridwidth=1,
             gridcolor='LightGray'
         )
-        fig_time.update_yaxes(
+        fig_sessions.update_yaxes(
             showgrid=False,
             gridwidth=1,
             gridcolor='LightGray',
@@ -338,42 +478,102 @@ def main():
             zerolinecolor='LightGray'
         )
         
-        st.plotly_chart(fig_time, use_container_width=True)
+        st.plotly_chart(fig_sessions, use_container_width=True)
 
-    st.stop()
-    # Select and rename columns for display
-    display_columns = {
-        'name': 'Activity Name',
-        'type': 'Type',
-        'distance': 'Distance (m)',
-        'moving_time': 'Moving Time (s)',
-        'elapsed_time': 'Elapsed Time (s)',
-        'elevation_gain': 'Elevation Gain (m)',
-        'datetime_local': 'Date',
-        'average_speed': 'Avg Speed (m/s)'
-    }
-    
-    df_display = df[display_columns.keys()].rename(columns=display_columns)
-    
-    # Convert distance to kilometers
-    df_display['Distance (m)'] = df_display['Distance (m)'].apply(lambda x: f"{x/1000:.2f} km")
-    
-    # Convert times to hours:minutes:seconds
-    df_display['Moving Time (s)'] = df_display['Moving Time (s)'].apply(
-        lambda x: str(pd.Timedelta(seconds=x))
-    )
-    df_display['Elapsed Time (s)'] = df_display['Elapsed Time (s)'].apply(
-        lambda x: str(pd.Timedelta(seconds=x))
-    )
-    
-    # Format date
-    df_display['Date'] = pd.to_datetime(df_display['Date']).dt.strftime('%Y-%m-%d %H:%M')
-    
-    # Convert speed to km/h
-    df_display['Avg Speed (m/s)'] = df_display['Avg Speed (m/s)'].apply(lambda x: f"{x*3.6:.2f} km/h")
-    
-    st.dataframe(df_display, use_container_width=True)
-    st.success(f"Successfully fetched {len(activities)} activities!")
+        """
+        ### **Intensitat** (WIP)
+
+        La **intensitat** és la càrrega que exerceixes en cada entrenament.
+        
+        """
+        """
+        ### **Rendiment**
+
+        """
+        """
+        #### Eficiència aeròbica
+
+        La freqüència cardíaca és una mesura de la resposta del teu cos a l'exercici. De forma indirecta, ens indica el treball que estàs realitzant muscularment tot i que pot veure's afectat per factors com la temperatura corporal, la fatiga i la hidratacaió.
+        
+        Tot i les limitacions, per comprovar la capacitat aeròbica és útil analitzar la relació entre càrrega externa (ritme) i càrrega interna (freqüència cardíaca) i veure com evoluciona en el temps.
+
+        Una **FC més baixa per ritmes semblants** (quan és consistent en el temps) indica una millora de la capacitat aeròbica.
+        
+        """
+        with st.form("Configura l'anàlisi:"):
+            """
+            Utilitza els filtres per seleccionar entrenaments que realitzis freqüentment i que siguin semblants entre ells.
+            """
+            col1, col2 = st.columns(2)
+            with col1:
+                min_dist = int(df_filtered['distance'].min())
+                max_dist = int(df_filtered['distance'].max()) + 1
+                distance_options = list(range(min_dist, max_dist))
+                
+                selected_distance = st.select_slider(
+                    '**Distància (km):**',
+                    options=distance_options,  # Use the list of integers
+                    value=(min_dist, max_dist - 1)
+                ) 
+                sports = df['type'].unique()
+                selected_sport = st.selectbox(label='**Activitat:**',options=sports)
+
+            with col2:
+                min_elev = int(df_filtered['elevation_gain'].min())
+                max_elev = int(df_filtered['elevation_gain'].max()) + 1
+                elevation_options = list(range(min_elev, max_elev))
+
+                selected_elevation = st.select_slider(
+                    '**Desnivell (m):**',
+                    options=elevation_options,  # Use the list of integers
+                    value=(min_elev, max_elev - 1)
+                )
+            submitted = st.form_submit_button("Guardar")
+            if submitted:
+                mask = (
+                    (df_filtered['distance'] >= (selected_distance[0])) 
+                    & (df_filtered['distance'] <= (selected_distance[1])) 
+                    & (df_filtered['elevation_gain'] >= selected_elevation[0]) & (df_filtered['elevation_gain'] <= selected_elevation[1]) 
+                    & (df_filtered['type'] == selected_sport)
+                )
+                df_aerobic = df_filtered[mask]
+            else:
+                st.stop()  
+        # Format df_aerobic for display
+        df_display = df_aerobic[[
+            'datetime_local', 'distance', 'moving_time', 
+            'elevation_gain', 'average_speed', 
+            'average_heartrate', 'max_heartrate'
+        ]].copy()
+
+        # Convert datetime_local to datetime for proper sorting
+        df_display['sort_date'] = pd.to_datetime(df_display['datetime_local'])
+        df_display = df_display.sort_values('sort_date', ascending=False)
+        df_display = df_display.drop('sort_date', axis=1)  # Remove the sorting column
+
+        # Then format the columns
+        df_display['datetime_local'] = df_display['datetime_local'].dt.strftime('%d/%m/%Y')
+        df_display['distance'] = df_display['distance'].apply(lambda x: f"{x:.1f} km")
+        df_display['moving_time'] = df_display['moving_time'].apply(
+            lambda x: f"{int(x//60)}h{int(x%60)}min" if x >= 60 else f"{int(x)}min"
+        )
+        df_display['elevation_gain'] = df_display['elevation_gain'].apply(lambda x: f"{int(x)} m")
+        df_display['average_speed'] = df_display['average_speed'].apply(
+            lambda x: f"{int((60/x))}:{int((60/x)%1 * 60):02d} min/km"
+        )
+        df_display['average_heartrate'] = df_display['average_heartrate'].apply(lambda x: f"{int(x)} bpm" if pd.notnull(x) else None)
+        df_display['max_heartrate'] = df_display['max_heartrate'].apply(lambda x: f"{int(x)} bpm" if pd.notnull(x) else None)
+        
+        # Rename columns
+        df_display.columns = [
+            'Data', 'Distància', 'Temps', 'Desnivell', 
+            'Ritme', 'FC mitjana', 'FC màxima'
+        ]
+
+        st.dataframe(df_display, use_container_width=True)
+
+        st.stop()
+
 
 if __name__ == "__main__":
     main()
