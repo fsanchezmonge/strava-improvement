@@ -7,6 +7,14 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import plotly.graph_objects as go
 from scipy import stats
+import time
+
+st.set_page_config(
+    page_title="Estic millorant el meu estat de forma?",
+    page_icon=":running:",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
 
 # Load environment variables
 load_dotenv()
@@ -100,13 +108,64 @@ def get_activities(access_token):
     activities = []
     page = 1
     
+    # Initialize rate limiting parameters
+    requests_in_window = 0
+    window_start = datetime.now(timezone.utc)
+    daily_requests = 0
+    daily_start = window_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    
     while True:
-        params = {'page': page, 'per_page': 200}
-        response = requests.get(activities_url, headers=headers, params=params)
-        if response.status_code != 200 or not response.json():
+        # Check rate limits
+        current_time = datetime.now(timezone.utc)
+        
+        # Reset 15-minute window counter if needed
+        if (current_time - window_start).total_seconds() > 900:  # 15 minutes
+            requests_in_window = 0
+            window_start = current_time
+            
+        # Reset daily counter if needed
+        if current_time.date() > daily_start.date():
+            daily_requests = 0
+            daily_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+        # Check if we're within limits
+        if requests_in_window >= 100:
+            wait_time = 900 - (current_time - window_start).total_seconds()
+            st.warning(f"S'ha arribat al límit de peticions. Esperant {int(wait_time)} segons...")
+            time.sleep(wait_time)
+            requests_in_window = 0
+            window_start = datetime.now(timezone.utc)
+            
+        if daily_requests >= 1000:
+            st.error("S'ha arribat al límit diari de peticions. Torna-ho a provar demà.")
             break
-        activities.extend(response.json())
-        page += 1
+            
+        params = {'page': page, 'per_page': 200}
+        try:
+            response = requests.get(activities_url, headers=headers, params=params)
+            requests_in_window += 1
+            daily_requests += 1
+            
+            if response.status_code == 429:  # Rate limit exceeded
+                retry_after = int(response.headers.get('Retry-After', 60))
+                st.warning(f"S'ha arribat al límit de peticions. Esperant {retry_after} segons...")
+                time.sleep(retry_after)
+                continue
+                
+            if response.status_code != 200:
+                st.error(f"Error en obtenir les activitats: {response.status_code}")
+                break
+                
+            response_data = response.json()
+            if not response_data:
+                break
+                
+            activities.extend(response_data)
+            page += 1
+            
+        except Exception as e:
+            st.error(f"Error en connectar amb Strava: {str(e)}")
+            break
 
     activity_data = []
     for activity in activities:
@@ -145,11 +204,30 @@ def save_activities_to_supabase(activities, athlete_id):
         ).execute()
 
 def main():
-    st.title("Com puc saber si estic millorant?")
+    with st.sidebar:
+        """
+        Benvingut!
+
+        Podràs trobar més informació sobre la aplicació a la meva web
+
+        Si tens dubtes o suggerències, també em pots escriure per xarxes
+        
+        Fent servir l'aplicació acceptes la  [Política de privacitat](privacy_policy.md)
+        """
+        st.write("")
+        st.markdown(
+            """<svg width='180' height='30' viewBox='0 0 365 37' fill='none' xmlns='http://www.w3.org/2000/svg'>
+                <path d='M0.905029 35.1577H3.31523V29.0503H7.34003C10.8266 29.0503 12.8858 27.1315 12.8858 23.9257C12.8858 20.7433 10.8266 18.7777 7.36343 18.7777H0.905029V35.1577ZM3.31523 26.8039V21.0241H7.26983C9.42263 21.0241 10.4756 21.9601 10.4756 23.9257C10.4756 25.8445 9.39923 26.8039 7.24643 26.8039H3.31523ZM23.6787 35.5087C27.8907 35.5087 30.6753 32.1157 30.6753 26.9677C30.6753 21.8197 27.8907 18.4267 23.6787 18.4267C19.4667 18.4267 16.7055 21.8197 16.7055 26.9677C16.7055 32.1157 19.4667 35.5087 23.6787 35.5087ZM23.6787 33.2623C20.8473 33.2623 19.1157 30.8755 19.1157 26.9677C19.1157 23.0599 20.8473 20.6731 23.6787 20.6731C26.5335 20.6731 28.2651 23.0599 28.2651 26.9677C28.2651 30.8755 26.5335 33.2623 23.6787 33.2623ZM37.4562 35.1577H40.2174L43.9848 22.5919H44.0316L47.7756 35.1577H50.5602L53.6958 18.7777H51.2388L48.8988 31.3201H48.852L45.1314 18.7777H42.8616L39.1644 31.3201H39.1176L36.7776 18.7777H34.2972L37.4562 35.1577ZM58.3356 35.1577H68.3742V32.9113H60.7458V27.8101H67.719V25.6573H60.7458V21.0241H68.3742V18.7777H58.3356V35.1577ZM81.6314 28.5823C84.0416 28.0441 85.469 26.2891 85.469 23.7619C85.469 20.6497 83.3864 18.7777 79.97 18.7777H73.7924V35.1577H76.2026V28.7695H79.0808L82.4504 35.1577H85.1648L81.6314 28.6057V28.5823ZM76.2026 26.5465V21.0241H79.736C81.9356 21.0241 83.0588 21.9367 83.0588 23.7619C83.0588 25.5871 81.9122 26.5465 79.736 26.5465H76.2026ZM90.4832 35.1577H100.522V32.9113H92.8934V27.8101H99.8666V25.6573H92.8934V21.0241H100.522V18.7777H90.4832V35.1577ZM105.94 35.1577H111.111C115.417 35.1577 118.295 32.5369 118.295 26.9443C118.295 21.7963 115.417 18.7777 111.205 18.7777H105.94V35.1577ZM108.35 32.9113V21.0241H111.135C114.036 21.0241 115.885 23.0131 115.885 26.9443C115.885 31.2031 114.036 32.9113 111.018 32.9113H108.35ZM132.055 35.1577H138.115C142 35.1577 144.012 33.4729 144.012 30.2437C144.012 28.3951 143.053 26.9677 141.579 26.3827V26.3359C142.702 25.7743 143.404 24.5809 143.404 23.0599C143.404 20.5093 141.462 18.7777 138.607 18.7777H132.055V35.1577ZM134.465 25.5871V21.0007H138.209C140.034 21.0007 140.994 21.7729 140.994 23.2705C140.994 24.8149 140.081 25.5871 138.209 25.5871H134.465ZM134.465 32.9347V27.6229H138.162C140.572 27.6229 141.602 28.4185 141.602 30.2203C141.602 32.1157 140.549 32.9347 138.115 32.9347H134.465ZM151.963 35.1577H154.373V28.3717L160.012 18.7777H157.321L153.18 26.1253H153.133L148.991 18.7777H146.3L151.963 28.3717V35.1577Z' fill='black'/>
+                <path fill-rule='evenodd' clip-rule='evenodd' d='M275.925 35.6008L275.923 35.5993H286.002L292.193 23.1514L298.383 35.5993H310.63L292.191 0L274.689 33.7968L267.969 23.9845C272.118 21.9836 274.704 18.5181 274.704 13.54V13.442C274.704 9.92849 273.631 7.39027 271.581 5.34009C269.189 2.94868 265.334 1.43574 259.282 1.43574H242.59V35.6008H254.011V25.8391H256.451L262.893 35.6008H275.925ZM346.353 0L327.917 35.5993H340.164L346.354 23.1514L352.545 35.5993H364.791L346.353 0ZM319.283 37L337.719 1.40071H325.473L319.282 13.8486L313.091 1.40071H300.845L319.283 37ZM258.94 17.6885C261.673 17.6885 263.333 16.4684 263.333 14.3698V14.2718C263.333 12.0756 261.624 11.0019 258.989 11.0019H254.01V17.6885H258.94ZM218.165 11.0994H208.112V1.43574H239.64V11.0994H229.587V35.6008H218.165V11.0994ZM180.282 23.2037L174.181 30.476C178.525 34.2835 184.772 36.2353 191.703 36.2353C200.879 36.2353 206.784 31.8425 206.784 24.6675V24.5703C206.784 17.6885 200.928 15.1502 192.191 13.5401C188.579 12.856 187.652 12.2712 187.652 11.3435V11.2459C187.652 10.4162 188.433 9.83056 190.141 9.83056C193.313 9.83056 197.17 10.8554 200.39 13.1981L205.955 5.48697C202.001 2.36309 197.121 0.800959 190.532 0.800959C181.111 0.800959 176.036 5.8286 176.036 12.3196V12.4176C176.036 19.6406 182.772 21.8376 190.434 23.3986C194.095 24.131 195.168 24.6675 195.168 25.644V25.742C195.168 26.6689 194.29 27.2053 192.24 27.2053C188.238 27.2053 183.992 26.0348 180.282 23.2037Z' fill='#FC5200'/>
+            </svg>""", 
+            unsafe_allow_html=True
+        )
+
+    st.title("Estic millorant el meu estat de forma?")
     """    
     Si t'estàs preparant per una cursa o vols millorar el teu estat de forma és important revisar si el teu entrenament està funcionant i adaptar-ho si és necessari.
     
-    Amb aquesta aplicació podràs revisar algunes dades que podran ajudar-te a trobar la resposta. 
+    Amb aquesta aplicació podràs revisar algunes dades que t'ajudaran a trobar la resposta. Recorda que el més important és ser consistent i cada un de nosaltres té un context diferent.
     """
     df = None
     with st.container(border=True):
@@ -532,14 +610,18 @@ def main():
                 "weekly_avg_speed": (x["average_speed"] * x["moving_time"]).sum() / x["moving_time"].sum()
             })
         ).reset_index()
+        weekly_stats["hr_change"] = weekly_stats["weekly_avg_hr"].diff()
+        weekly_stats["speed_change"] = weekly_stats["weekly_avg_speed"].diff()
 
         # Format dataframe
         weekly_stats["weekly_avg_pace"] = (60 / weekly_stats["weekly_avg_speed"]).apply(lambda x: f"{int(x)}:{int((x - int(x)) * 60):02d} min/km")
         weekly_stats["weekly_avg_hr"] = weekly_stats["weekly_avg_hr"].apply(lambda x: f"{int(x)} bpm")
         weekly_stats = weekly_stats.drop("weekly_avg_speed", axis=1)
+        weekly_stats = weekly_stats.sort_values('week', ascending=False)
+       
+        weekly_stats = weekly_stats.drop(["hr_change", "speed_change"], axis=1)
         weekly_stats.columns = ['Setmana', 'FC mitjana', 'Ritme mitjà']
-        weekly_stats = weekly_stats.sort_values('Setmana', ascending=False)
-        
+
         st.dataframe(weekly_stats, use_container_width=True)
         """
         ### **Rendiment**
@@ -559,7 +641,7 @@ def main():
             """
             *Utilitza els filtres per seleccionar entrenaments que realitzis freqüentment i que siguin semblants entre ells.*
             """
-            col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2,gap="medium")
             with col1:
                 min_dist = int(df_filtered['distance'].min())
                 max_dist = int(df_filtered['distance'].max()) + 1
@@ -570,7 +652,7 @@ def main():
                     options=distance_options,  # Use the list of integers
                     value=(min_dist, max_dist - 1)
                 ) 
-                sports = df['type'].unique()
+                sports = df_filtered['type'].unique()
                 selected_sport = st.selectbox(label='**Activitat:**',options=sports)
 
             with col2:
