@@ -20,15 +20,26 @@ st.set_page_config(
 load_dotenv()
 
 # Initialize Supabase client
-url: str = st.secrets["SUPABASE_URL"]
-key: str = st.secrets["SUPABASE_KEY"]
+# Try to get from streamlit secrets first (for cloud deployment)
+# If not found, fall back to environment variables (for local development)
+url: str = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
+key: str = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY"))
+
+if not url or not key:
+    st.error("Missing Supabase credentials. Please check your environment variables or secrets.")
+    st.stop()
 
 supabase: Client = create_client(url, key)
 
 # Strava API credentials
-STRAVA_CLIENT_ID = st.secrets["STRAVA_CLIENT_ID"]
-STRAVA_CLIENT_SECRET = st.secrets["STRAVA_CLIENT_SECRET"]
-REDIRECT_URI = "http://localhost:8501"  # Streamlit default local URL
+STRAVA_CLIENT_ID = st.secrets.get("STRAVA_CLIENT_ID", os.getenv("STRAVA_CLIENT_ID"))
+STRAVA_CLIENT_SECRET = st.secrets.get("STRAVA_CLIENT_SECRET", os.getenv("STRAVA_CLIENT_SECRET"))
+
+if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
+    st.error("Missing Strava API credentials. Please check your environment variables or secrets.")
+    st.stop()
+
+REDIRECT_URI = st.secrets.get("REDIRECT_URI", "http://localhost:8501")  # Use configured URL or default to local
 AUTH_URL = f"http://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=activity:read_all"
 
 def get_token(code):
