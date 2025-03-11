@@ -20,14 +20,14 @@ st.set_page_config(
 load_dotenv()
 
 # Initialize Supabase client
-url: str = st.secrets["general"]["db_url"]
-key: str = st.secrets["general"]["db_key"]
+url: str = st.secrets["general"]["SUPABASE_URL"]
+key: str = st.secrets["general"]["SUPABASE_KEY"]
 
 supabase: Client = create_client(url, key)
 
 # Strava API credentials
-STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
-STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+STRAVA_CLIENT_ID = st.secrets["general"]["STRAVA_CLIENT_ID"]
+STRAVA_CLIENT_SECRET = st.secrets["general"]["STRAVA_CLIENT_SECRET"]
 REDIRECT_URI = "http://localhost:8501"  # Streamlit default local URL
 AUTH_URL = f"http://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=activity:read_all"
 
