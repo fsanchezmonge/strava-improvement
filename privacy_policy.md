@@ -1,7 +1,7 @@
 # Política de Privacitat
 
 ## Visió General
-Aquesta política de privacitat explica com la nostra aplicació "Estic millorant el meu estat de forma?" ("l'Aplicació") recull, utilitza i protegeix les teves dades.
+Aquesta política de privacitat explica com la nostra aplicació "100 milles app" ("l'Aplicació") recull, utilitza i protegeix les teves dades.
 
 ## Recollida de Dades
 Quan connectes el teu compte de Strava a la nostra Aplicació, recopilem:
@@ -21,8 +21,8 @@ Les teves dades s'utilitzen per:
 - Les dades només són accessibles per a tu a través de la teva sessió autenticada
 
 ## Retenció de Dades
-- Les dades d'activitat s'emmagatzemen només durant el temps necessari per analitzar el teu rendiment
-- Pots sol·licitar l'eliminació de les teves dades en qualsevol moment
+- Les dades d'activitat s'emmagatzemen només durant el temps necessari per analitzar el teu rendiment. Un cop finalitzada la sessió, les dades s'eliminen.
+- Pots sol·licitar l'eliminació de les teves dades en qualsevol moment. 
 - Els tokens d'autenticació es renoven o s'eliminen automàticament quan caduquen
 
 ## Serveis de Tercers
@@ -32,10 +32,8 @@ Utilitzem:
 - Streamlit per a la interfície de l'aplicació web
 
 ## Els Teus Drets
-Pots:
-- Revocar l'accés a les teves dades de Strava en qualsevol moment a través de la configuració de Strava
-- Sol·licitar l'eliminació de les teves dades emmagatzemades
-- Exportar les teves dades en un format portable
+- Revocar l'accés a les teves dades de Strava en qualsevol moment a través de la configuració de Strava (https://www.strava.com/settings/apps).
+- Exportar les teves dades en un format portable (csv, xlsx)
 
 ## Protecció de Dades
 Implementem mesures de seguretat que inclouen:
@@ -48,6 +46,6 @@ Implementem mesures de seguretat que inclouen:
 Podem actualitzar aquesta política de privacitat. Els canvis significatius seran notificats a través de l'Aplicació.
 
 ## Contacte
-Per a preguntes sobre les teves dades o aquesta política de privacitat, si us plau contacta amb [La teva Informació de Contacte].
+Per a preguntes sobre les teves dades o aquesta política de privacitat, si us plau contacta amb fernandosanchezmp@gmail.com.
 
-Última actualització: [Data Actual] 
+Última actualització: 13/03/2025
