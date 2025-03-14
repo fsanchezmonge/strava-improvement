@@ -289,7 +289,7 @@ def main():
             col7, col8, col9 = st.columns(3)
             with col8:
                 st.markdown(f"""
-                    <a href="{AUTH_URL}" target="_self" style="text-decoration: none;">
+                    <a href="{AUTH_URL}" target="_parent" style="text-decoration: none;">
                         <div style="
                             background-color: #FC4C02;
                             border: none;
