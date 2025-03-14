@@ -302,7 +302,21 @@ def main():
                             </g>
                         </g>
                     </svg>"""
-                st.markdown(f'<a href="{AUTH_URL}" target="_blank">{strava_svg}</a>', unsafe_allow_html=True)
+                st.markdown(f"""
+                    <style>
+                    .strava-button {{
+                        display: inline-block;
+                        cursor: pointer;
+                        transition: transform 0.2s;
+                    }}
+                    .strava-button:hover {{
+                        transform: scale(1.02);
+                    }}
+                    </style>
+                    <div class="strava-button">
+                        <a href="{AUTH_URL}">{strava_svg}</a>
+                    </div>
+                    """, unsafe_allow_html=True)
 
         else:
             st.write("")
