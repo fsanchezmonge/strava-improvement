@@ -288,30 +288,22 @@ def main():
         if st.session_state.access_token is None:
             col7, col8, col9 = st.columns(3)
             with col8:
-                st.markdown(f"""
-                    <a href="{AUTH_URL}" target="_parent" style="text-decoration: none;">
-                        <div style="
-                            background-color: #FC4C02;
-                            border: none;
-                            color: white;
-                            padding: 12px 24px;
-                            text-align: center;
-                            text-decoration: none;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 16px;
-                            margin: 4px 2px;
-                            cursor: pointer;
-                            border-radius: 4px;
-                            width: 100%;
-                        ">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Strava_logo_2019.svg/120px-Strava_logo_2019.svg.png" 
-                                 style="height: 24px; margin-right: 8px;">
-                            Connect with Strava
-                        </div>
-                    </a>
-                """, unsafe_allow_html=True)
+                # Define the SVG as a string
+                svg_code = f"""
+                <a href="{AUTH_URL}" target="_blank">
+                    <svg width="193px" height="48px" viewBox="0 0 193 48" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <g id="Strava-Button_outlined" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                            <g id="btn_strava_connectwith_orange">
+                                <rect id="button-bg" fill="#FC4C02" x="4" y="4" width="185" height="40" rx="2"></rect>
+                                <!-- Add text or icons inside the button -->
+                            </g>
+                        </g>
+                    </svg>
+                </a>
+                """
+
+                # Display the button
+                st.markdown(svg_code, unsafe_allow_html=True)
         else:
             st.write("")
             activities = get_activities(st.session_state.access_token)
