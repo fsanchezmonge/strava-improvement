@@ -223,6 +223,7 @@ def main():
 
         Si tens dubtes o suggerències, també em pots escriure per xarxes
         """
+        col1sb, col2sb, col3sb = st.columns(3)
         st.markdown(f""
 
         )
@@ -235,7 +236,8 @@ def main():
             </svg>""", 
             unsafe_allow_html=True
         )
-        """        
+        st.write("")
+        """ 
         Fent servir l'aplicació acceptes la  [Política de privacitat](privacy_policy.md)
         """
 
