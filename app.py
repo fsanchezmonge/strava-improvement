@@ -22,8 +22,8 @@ load_dotenv()
 # Initialize Supabase client
 # Try to get from streamlit secrets first (for cloud deployment)
 # If not found, fall back to environment variables (for local development)
-url: str = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
-key: str = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY"))
+url: str = st.secrets.get("SUPABASE_URL")
+key: str = st.secrets.get("SUPABASE_KEY")
 
 if not url or not key:
     st.error("Missing Supabase credentials. Please check your environment variables or secrets.")
