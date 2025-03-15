@@ -237,7 +237,7 @@ def main():
         )
         st.write("")
         """ 
-        Fent servir l'aplicació acceptes la  [Política de privacitat](privacy_policy.md)
+        Fent servir l'aplicació acceptes la  [Política de privacitat](https://github.com/fsanchezmonge/strava-improvement/blob/main/privacy_policy.md)
         """
 
     st.title("Estic millorant el meu estat de forma?")
@@ -317,6 +317,7 @@ def main():
                         <a href="{AUTH_URL}">{strava_svg}</a>
                     </div>
                     """, unsafe_allow_html=True)
+                st.write("")
 
         else:
             st.write("")
