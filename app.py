@@ -10,7 +10,7 @@ from scipy import stats
 import time
 
 st.set_page_config(
-    page_title="Estic millorant el meu estat de forma?",
+    page_title="100 milles",
     page_icon=":running:",
     layout="centered",
     initial_sidebar_state="expanded"
@@ -216,13 +216,14 @@ def save_activities_to_supabase(activities, athlete_id):
 def main():
     with st.sidebar:
         """
-        Benvingut!
+        Benvinguts!
 
         Podràs trobar més informació sobre la aplicació a la meva web
 
         Si tens dubtes o suggerències, també em pots escriure per xarxes
         """
         col1sb, col2sb, col3sb = st.columns(3)
+
         st.markdown(f""
 
         )
@@ -240,11 +241,15 @@ def main():
         Fent servir l'aplicació acceptes la  [Política de privacitat](https://github.com/fsanchezmonge/strava-improvement/blob/main/privacy_policy.md)
         """
 
-    st.title("Estic millorant el meu estat de forma?")
+    st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """    
-    Si t'estàs preparant per una cursa o vols millorar el teu estat de forma és important revisar si el teu entrenament està funcionant i adaptar-ho si és necessari.
+    Si t'estàs preparant o has preparat una cursa recentment és important revisar que el teu entrenament compleixi uns principis bàsics i estimuli adaptacions que acabin fent millorar el teu rendiment.
     
-    Amb aquesta aplicació podràs revisar algunes dades que t'ajudaran a trobar la resposta. Recorda que el més important és ser consistent i cada un de nosaltres té un context diferent.
+    Hi ha tres 'palanques' bàsiques que podem modificar per desencadenar aquestes adaptacions: **volum** (o durada), **freqüencia** i **intensitat**.
+        
+    L'aplicació mostra cada una d'aquestes parts per separat, i una darrera part per analitzar si el teu rendiment millora o no com a conseqüència de les altres.
+
+    Recorda que hi ha factors com l'estrès personal, historial esportiu... que també aftecten a l'estat de forma.
     """
     df = None
     with st.container(border=True):
@@ -385,21 +390,12 @@ def main():
                 (df['type'] == selected_type)
             )
         df_filtered = df[mask]
-        st.divider()
-        """
-        ## Analitza els resultats
-
-        La informació està dividida en 4 parts: **volum**, **freqüencia**, **intensitat** i **rendiment**.
-        
-        Per saber si estàs millorant o no has de tenir en compte totes les parts en conjunt i recordar que hi ha factors com estrès personal, historial esportiu... que també aftecten a l'estat de forma
-        """
-        
+        st.divider()     
         """
         ### **Volum**
-        **Incrementar gradualment** (no es recomana més d'un 10% inter-setmanal) i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma.
+        **Incrementar gradualment** (no es recomana més d'un 10% inter-setmanal com a norma general) i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma.
 
-        Aquest [estudi](https://pubmed.ncbi.nlm.nih.gov/32421886/) on s'examinava volum mitjà setmanal i sortida més llarga de 556 participants d'una mitja marató i 441 d'una marató, va trobar **una correlació alta entre volums d'entrenament alts i els temps la prova més baixos**.
-        
+        Si entrenes per muntanya, pot ser més important fer servir temps en comptes de distància per tenir en compte el desnivell.
         """
         # Create tabs for distance and time charts
         tab1, tab2 = st.tabs(["📏 Distància", "⏱️ Temps"])
