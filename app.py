@@ -12,7 +12,7 @@ import time
 from plotly.subplots import make_subplots
 
 st.set_page_config(
-    page_title="100 milles app",
+    page_title="Analitza el teu entrenament",
     page_icon=":running:",
     layout="centered",
     initial_sidebar_state="expanded"
@@ -223,10 +223,112 @@ def save_activities_to_supabase(activities, athlete_id):
             on_conflict='activity_id'
         ).execute()
 
+def pace_to_speed(minutes, seconds=0):
+    # Convert pace (min/km) to speed (km/h)
+    total_minutes = minutes + seconds/60
+    speed = 60 / total_minutes  # 60 minutes per hour
+    return speed
+
+def decimal_pace_to_str(decimal_pace: float) -> str:
+    """
+    Converts decimal pace (min/km as float) to a string format mm:ss min/km.
+    
+    Example:
+    5.5 -> "5:30 min/km"
+    4.25 -> "4:15 min/km"
+    """
+    minutes = int(decimal_pace)
+    seconds = round((decimal_pace - minutes) * 60)
+    return f"{minutes}:{seconds:02d} min/km"
+
+# Label intensity
+def label_intensity(index):
+    if index <= 0.95:
+        return "Alta"
+    elif index <= 1.15:
+        return "Moderada"
+    else:
+        return "Baixa"
+
+def add_hr_intensity_index(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds an intensity labelto the DataFrame based on average heart rate.
+    If average heart rate is below average heart rate of df -5% it is easy, if it is between -5% and 5% it is moderate, if it is above 5% it is hard.
+    
+    Parameters:
+    - df: DataFrame with a 'average_heartrate' column.
+    """
+    average_hr = df['average_heartrate'].mean()
+    df['hr_intensity'] = df['average_heartrate'].apply(lambda x: 'Easy' if x < average_hr * 0.95 else 'Moderate' if x < average_hr * 1.05 else 'Hard')
+    return df   
+
+def compute_easy_percentage(df):
+    df = df.copy()
+    total_sessions = len(df)
+    
+    if total_sessions == 0:
+        return 0.0
+    
+    easy_sessions = len(df[df["intensity_zone_pace"] == "Baixa"])
+    return round(100 * easy_sessions / total_sessions, 1)
+
+def add_intensity_index(df: pd.DataFrame, reference_pace: float, race_distance: float) -> pd.DataFrame:
+    """
+    Adds an intensity index and zone to the DataFrame based on a distance-adjusted reference pace.
+    
+    Parameters:
+    - df: DataFrame with a 'pace_decimal' column (min/km).
+    - reference_pace: User's race pace (min/km).
+    - race_distance: Distance of the race (in km), may be imprecise due to GPS error.
+
+    Returns:
+    - The same df with two new columns: 'intensity_index' and 'intensity_zone'
+    """
+
+    if "average_pace" not in df.columns:
+        raise ValueError("DataFrame must contain a 'average_pace' column in min/km")
+
+    # Known race distances and their corresponding adjustment factors
+    distance_factors = {
+        5.0: 1.05,
+        10.0: 1.03,
+        15.0: 1.00,
+        21.1: 0.98,
+        42.2: 0.95
+    }
+
+    # Find the closest race distance
+    closest_dist = min(distance_factors.keys(), key=lambda d: abs(d - race_distance))
+    factor = distance_factors[closest_dist]
+
+    # Adjust race pace
+    adjusted_reference_pace = reference_pace * factor
+    adjusted_reference_pace_str = decimal_pace_to_str(adjusted_reference_pace)
+    
+    st.markdown(
+    f"""
+    ###### El ritme màxim estimat que pots mantenir en una hora és {adjusted_reference_pace_str}
+    """
+    )
+
+    # Calculate intensity index
+    df["intensity_index"] = df["average_pace"] / adjusted_reference_pace
+
+    df["intensity_zone_pace"] = df["intensity_index"].apply(label_intensity)
+
+    return df
+
+def speed_to_pace(speed_kmh):
+    """Convert speed (km/h) to pace (min/km)"""
+    if pd.isna(speed_kmh) or speed_kmh == 0:
+        return None
+    minutes_per_km = 60 / speed_kmh
+    return minutes_per_km
+
 def main():
     with st.sidebar:
         """
-        Benvinguts!
+        Hola!
 
         Escriu-me per xarxes o envia'm un mail amb qualsevol dubte o suggerència que tinguis.
         """
@@ -278,12 +380,9 @@ def main():
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """    
-    Si t'estàs preparant o has preparat una cursa recentment és important revisar que el teu entrenament compleixi uns principis bàsics i provoqui adaptacions que acabin fent millorar el teu rendiment.
+    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**. Modificant qualsevol d'aquests tres components durant l'entrenament aconseguim adaptacions que milloren el nostre estat de forma.
     
-    Hi ha tres 'palanques' bàsiques que podem modificar per desencadenar aquestes adaptacions: **volum** (o durada), **freqüencia** i **intensitat**.
-    L'aplicació mostra cada una d'aquestes parts per separat.
-
-    Recorda que hi ha factors com l'estrès personal, historial esportiu... que també aftecten a l'estat de forma i no es poden quantificar fàcilment.
+    Recorda que les dades també tenen limitacions i que hi ha factors com l'estrès personal, historial esportiu... que també aftecten a l'estat de forma i no es poden quantificar.
     """
     df = None
     with st.container(border=True):
@@ -427,9 +526,9 @@ def main():
         st.divider()     
         """
         ### **Volum**
-        **Incrementar gradualment** (no es recomana més d'un 10% inter-setmanal com a norma general) i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma.
+        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma. Una bona norma general és estar al voltant del 10% de variació setmanal.
 
-        Si entrenes per muntanya, pot ser més útil fer servir temps en comptes de distància per tenir en compte el desnivell.
+        Si entrenes per muntanya, pot ser més útil fer servir temps i no distància per tenir en compte la desigualtat del terreny i el desnivell.
         """
         # Create tabs for distance and time charts
         tab1, tab2 = st.tabs(["📏 Distància", "⏱️ Temps"])
@@ -472,7 +571,7 @@ def main():
                 y=mean_distance,
                 line_dash="dash",
                 line_color="gray",
-                annotation_text=f"Mitjana: {mean_distance:.1f} km",
+                annotation_text=f"{mean_distance:.1f} km",
                 annotation_position="top right"
             )
             
@@ -544,7 +643,7 @@ def main():
                 y=mean_time,
                 line_dash="dash",
                 line_color="gray",
-                annotation_text=f"Mitjana: {mean_time:.1f} h",
+                annotation_text=f"{mean_time:.1f} h",
                 annotation_position="top right"
             )
             
@@ -594,10 +693,13 @@ def main():
             st.plotly_chart(fig_time, use_container_width=True)
 
         """        
-        Un dels entrenaments claus per proves de resistència és fer una sortida llarga.
-        Com a guia, a les setmanes de major volum, la seva distància hauria d'estar **entre el 30% i el 40% del total setmanal**. 
+        Un entrenament amb molts beneficis per proves de resistència és una sortida llarga.
+
+        Com de llarg dependrà del teu nivell i objectiu, però el més important és **començar amb una distància que et permeti progressar setmana a setmana** sense impactar excessivament en la resta de sessions. 
         
-        En general, si ets capaç d'incrementar la distància setmana a setmana i aconsegueixes mantenir ritmes semblants, és probable que estiguis millorant.
+        Una norma general és mantenir la distància d'aquesta sortida entre el 30% i el 40% del total setmanal.
+
+        Si ets capaç d'incrementar la distància setmana a setmana i aconsegueixes mantenir ritmes semblants, és probable que estiguis millorant.
         """
         
         # Get longest activity per week and weekly totals
@@ -658,6 +760,7 @@ def main():
         longest_runs_display = longest_runs_display.drop('numeric_percentage', axis=1)
         
         # Display the styled dataframe with sorting preserved
+        st.write("**Sessió més llarga per setmana**")
         st.dataframe(
             longest_runs_display,
             use_container_width=True,
@@ -735,7 +838,7 @@ def main():
         ### **Freqüència**
         Una major freqüència d'entrenament pot ser beneficiosa perquè produeix estímuls més constants i **distribueix millor la fatiga**, evitant sessions amb càrrega excessiva.
 
-        No obstant, el més important és **ser consistent** i trobar l'organització que et permeti **entrenar de forma continuada en el temps**.
+        Busca la freqüència que et permeti **ser consistent** i trobar l'organització per **entrenar de forma continuada en el temps**.
         """
         
         # Count sessions per week
@@ -748,6 +851,10 @@ def main():
         # Create a combined year-week label for x-axis
         weekly_sessions['Week_Label'] = weekly_sessions.apply(lambda x: f"S{int(x['Week']):02d}", axis=1)
 
+        # Add metric for mode sessions (changed from median)
+        mode_sessions = weekly_sessions['Sessions'].mode()[0]  # [0] because mode can return multiple values
+        st.metric("Num. de sessions més freqüent", f"{mode_sessions:.0f}")
+        
         # Create the sessions bar chart
         fig_sessions = go.Figure(data=[
             go.Bar(
@@ -787,114 +894,138 @@ def main():
         """
         ### **Intensitat**
 
-        Amb les dades disponibles, per fer una aproximació de com has variat la intensitat al llarg de les setmanes calculem  
-
-        """
-        """
-        Els gràfics mostren la variació percentual setmana a setmana de la freqüència cardíaca i el ritme mitjans.
-        - Per la **FC**, verd significa que ha baixat (menys esforç) i vermell que ha pujat (més esforç).
-        - Pel **ritme**, verd significa que ha millorat (més ràpid) i vermell que ha empitjorat (més lent).
-        
-        Una tendència positiva seria veure barres verdes en ambdós gràfics (menor FC i ritme més ràpid).
-        """
-        # Extract the week number and year for grouping
-        df_filtered["week"] = df_filtered["datetime_local"].dt.strftime('%Y-%W')
-
-        # Filter out activities with no heart rate data
-        df_hr = df_filtered[df_filtered['average_heartrate'].notna()]
-
-        # Check if there's any heart rate data
-        has_hr_data = not df_hr.empty
-
-        # Compute Weighted Weekly Average HR and Speed
-        weekly_stats = df_hr.groupby("week").apply(
-            lambda x: pd.Series({
-                "weekly_avg_hr": (x["average_heartrate"] * x["moving_time"]).sum() / x["moving_time"].sum() if has_hr_data else None,
-                "weekly_avg_speed": (x["average_speed"] * x["moving_time"]).sum() / x["moving_time"].sum()
-            })
-        ).reset_index()
-
-        # Sort by week to ensure correct calculation of changes
-        weekly_stats = weekly_stats.sort_values('week')
-
-        # Calculate percentage changes
-        weekly_stats["speed_change_pct"] = weekly_stats["weekly_avg_speed"].pct_change() * 100
-        if has_hr_data:
-            weekly_stats["hr_change_pct"] = weekly_stats["weekly_avg_hr"].pct_change() * 100
-
-        # Create the subplots figure with appropriate number of rows
-        if has_hr_data:
-            fig = make_subplots(rows=2, cols=1, 
-                              subplot_titles=('Variació FC mitjana (%)', 'Variació ritme mitjà (%)'),
-                              vertical_spacing=0.15)
+        Per estimar la intensitat dels teus entrenaments, farem servir el ritme de la teva última cursa o el que introdueixis si no hi ha cap cursa en el període seleccionat.
+        """      
+        with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
+            st.write("""
+            Quan vagis a pujar la teva activitat, selecciona la opció 'Cursa' al desplegable 'Tipus d'activitat'.
+            """)
+        # Get reference race speed (maximum speed from workout_type = 1)
+        race_activities = df_filtered[df_filtered['workout_type'] == 1]
+        # Format race activities for display
+        if not race_activities.empty:
+            races_display = race_activities[[
+                'name', 'type', 'datetime_local', 'distance', 'moving_time', 'average_speed'
+            ]].copy()
+            
+            # Format the columns
+            races_display['datetime_local'] = races_display['datetime_local'].dt.strftime('%d/%m/%Y')
+            races_display['distance'] = races_display['distance'].apply(lambda x: f"{int(x)} km")
+            races_display['moving_time'] = races_display['moving_time'].apply(
+                lambda x: f"{int(x//60)}:{int(x%60):02d}"
+            )
+            races_display['average_speed'] = races_display['average_speed'].apply(
+                lambda x: f"{int((60/x))}:{int((60/x)%1 * 60):02d} min/km"
+            )
+            
+            # Rename columns
+            races_display.columns = ['Nom', 'Tipus', 'Data', 'Distància (km)', 'Temps (h:min)', 'Ritme (min/km)']
+            
+            st.write("Aquesta és la cursa més recent detectada:")
+            st.dataframe(
+                races_display,
+                use_container_width=True,
+                hide_index=True
+            )
+            race_speed = race_activities['average_speed'].iloc[0]
+            race_pace = speed_to_pace(race_speed)
+            race_distance = race_activities['distance'].iloc[0]
         else:
-            fig = make_subplots(rows=1, cols=1, 
-                              subplot_titles=('Variació ritme mitjà (%)',))
+            with st.container(border=True):
+                st.write("Introueix ritme i distància del que vulguis utilitzar com a referència de ritme de competició:")
+                cols1, cols2, cols3 = st.columns(3)
+                with cols1:
+                    race_minutes = st.number_input("Minuts:",step= 1, value=5, min_value=2, max_value=10)
+                with cols2:
+                    race_seconds = st.number_input("Segons:", step= 1, value=30, min_value=0, max_value=59)
+                
+                race_pace = (race_minutes + race_seconds/60)
+                race_speed = round(pace_to_speed(race_pace),2)
+                with cols3:
+                    race_distance = st.number_input("Distància (km):", step= 1, value=10, min_value=2, max_value=100)
+        """
+        Amb aquest ritme, estimarem el que seria el ritme màxim que podries mantenir durant 1 hora, i a partir d'aquí classificarem cada entrenament en baixa, mitja o alta intensitat.
+        """          
+                # After creating df_filtered, add the pace column
+        df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
+        df_intensity = add_intensity_index(df_filtered, race_pace, race_distance)
+        #st.dataframe(df_intensity[['datetime_local', 'average_pace', 'intensity_index', 'intensity_zone_pace', 'average_heartrate']])
+        easy_percentage = compute_easy_percentage(df_intensity)
+        st.metric("% de sessions amb intensitat baixa", f"{easy_percentage:.1f}%",help="La distribució que funciona millor per a la majoria de corredors és **80% de dies de baixa intensitat** i **20% de dies de moderada o alta intensitat**.")
 
-        # Add HR change bars if data exists
-        if has_hr_data:
-            fig.add_trace(
+        # Group by week and intensity zone to get counts
+        intensity_by_week = df_intensity.groupby([
+            df_intensity['datetime_local'].dt.isocalendar().year,
+            df_intensity['datetime_local'].dt.isocalendar().week,
+            'intensity_zone_pace'
+        ]).size().reset_index()
+        intensity_by_week.columns = ['Year', 'Week', 'Intensity', 'Count']
+
+        # Create week labels
+        intensity_by_week['Week_Label'] = intensity_by_week.apply(lambda x: f"S{int(x['Week']):02d}", axis=1)
+
+        # Create stacked bar chart
+        fig_intensity = go.Figure()
+
+        # Define colors for each intensity zone
+        intensity_colors = {
+            'Baixa': '#2ecc71',    # Green
+            'Moderada': '#f1c40f', # Yellow
+            'Alta': '#e74c3c'      # Red
+        }
+
+        # Add bars for each intensity zone
+        for intensity in ['Baixa', 'Moderada', 'Alta']:
+            mask = intensity_by_week['Intensity'] == intensity
+            fig_intensity.add_trace(
                 go.Bar(
-                    x=weekly_stats['week'].str.replace('\d{4}-', 'S'),
-                    y=weekly_stats['hr_change_pct'].round(1),
-                    text=weekly_stats['hr_change_pct'].round(1).apply(lambda x: f"{x:+.1f}%" if pd.notnull(x) else ""),
+                    name=intensity,
+                    x=intensity_by_week[mask]['Week_Label'].unique(),
+                    y=intensity_by_week[mask]['Count'],
+                    text=intensity_by_week[mask]['Count'],
                     textposition='auto',
-                    name='FC',
-                    marker_color=weekly_stats['hr_change_pct'].apply(
-                        lambda x: 'lightcoral' if x > 0 else 'lightgreen' if x < 0 else 'gray'
-                    ),
-                ),
-                row=1, col=1
+                    marker_color=intensity_colors[intensity]  # Set color for each intensity
+                )
             )
 
-        # Add pace change bars
-        fig.add_trace(
-            go.Bar(
-                x=weekly_stats['week'].str.replace('\d{4}-', 'S'),
-                y=-weekly_stats['speed_change_pct'].round(1),  # Negative to show pace change
-                text=(-weekly_stats['speed_change_pct'].round(1)).apply(lambda x: f"{x:+.1f}%" if pd.notnull(x) else ""),
-                textposition='auto',
-                name='Ritme',
-                marker_color=(-weekly_stats['speed_change_pct']).apply(
-                    lambda x: 'lightcoral' if x > 0 else 'lightgreen' if x < 0 else 'gray'
-                ),
-            ),
-            row=2 if has_hr_data else 1, col=1
-        )
-
         # Update layout
-        fig.update_layout(
-            showlegend=False,
+        fig_intensity.update_layout(
+            title='Distribució de la intensitat per setmana',
+            xaxis_title='Setmana',
+            yaxis_title='Nombre de sessions',
+            barmode='stack',
             plot_bgcolor='white',
-            height=600 if has_hr_data else 400,  # Adjust height based on number of plots
-            title_text="Variació setmanal de FC i ritme" if has_hr_data else "Variació setmanal del ritme"
+            showlegend=False,
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+            )
         )
 
         # Update axes
-        if has_hr_data:
-            fig.update_xaxes(showgrid=False, title_text="", row=1, col=1)
-        fig.update_xaxes(showgrid=False, title_text="", row=2 if has_hr_data else 1, col=1)
-        if has_hr_data:
-            fig.update_yaxes(showgrid=True, gridcolor='LightGray', title_text="", row=1, col=1)
-        fig.update_yaxes(showgrid=True, gridcolor='LightGray', title_text="", row=2 if has_hr_data else 1, col=1)
+        fig_intensity.update_xaxes(
+            showgrid=False,
+            gridwidth=1,
+            gridcolor='LightGray'
+        )
+        fig_intensity.update_yaxes(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='LightGray',
+            zeroline=True,
+            zerolinewidth=1,
+            zerolinecolor='LightGray'
+        )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig_intensity, use_container_width=True)
 
-
-        # Continue with the existing weekly stats table
-        weekly_stats["weekly_avg_pace"] = (60 / weekly_stats["weekly_avg_speed"]).apply(lambda x: f"{int(x)}:{int((x - int(x)) * 60):02d} min/km")
-        weekly_stats["weekly_avg_hr"] = weekly_stats["weekly_avg_hr"].apply(lambda x: f"{int(x)} bpm")
-        weekly_stats = weekly_stats.drop("weekly_avg_speed", axis=1)
-        weekly_stats = weekly_stats.sort_values('week', ascending=False)
-       
-        weekly_stats = weekly_stats.drop(["hr_change_pct", "speed_change_pct"], axis=1)
-        weekly_stats.columns = ['Setmana', 'FC mitjana', 'Ritme mitjà']
-
-        st.dataframe(weekly_stats, use_container_width=True)
-        
         st.divider()
+
+        
         """
-        ### **Rendiment**
+        ### **Bonus (si tens dades de freqüència cardíaca)**
         """
         """
         #### Eficiència aeròbica
@@ -992,8 +1123,6 @@ def main():
         """
 
         st.dataframe(df_display, use_container_width=True)
-
-
 
 if __name__ == "__main__":
     main()
