@@ -339,7 +339,7 @@ def main():
         """
         Em pots contactar per mail o Strava amb qualsevol dubte o suggerència que tinguis.
         """
-        col1sb, col2sb, col3sb = st.columns(3)
+        col1sb, col2sb = st.columns(2)
         
         with col1sb:
             st.markdown("""
@@ -351,7 +351,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
         
-        with col3sb:
+        with col2sb:
             st.markdown("""
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
                 <div style="display: flex; justify-content: center;">
