@@ -463,7 +463,7 @@ def main():
                     }}
                     </style>
                     <div class="strava-button">
-                        <a href="{AUTH_URL}" target="_self">{strava_svg}</a>
+                        <a href="{AUTH_URL}"target="_self">{strava_svg}</a>
                     </div>
                     """, unsafe_allow_html=True)
                 st.write("")
