@@ -285,6 +285,7 @@ def add_intensity_index(df: pd.DataFrame, reference_pace: float, race_distance: 
     - The same df with two new columns: 'intensity_index' and 'intensity_zone'
     """
 
+
     if "average_pace" not in df.columns:
         raise ValueError("DataFrame must contain a 'average_pace' column in min/km")
 
