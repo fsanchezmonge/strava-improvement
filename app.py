@@ -1048,6 +1048,6 @@ def main():
         - [Endurance Training - Science and Practice (2nd Edition)](https://www.inigomujika.com/libros/endurance-training-science-and-practice-2-edicion/)
         - [Training for the Uphill Athlete](https://uphillathlete.com/product/training-for-the-uphill-athlete-book/)
         - [The truth about long runs](https://youtu.be/Qcnlhzw0dQY?si=HatCwe94pM9Qb7Ld)
-                    """)
+        """)
 if __name__ == "__main__":
     main()
