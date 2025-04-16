@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from scipy import stats
 import time
 from plotly.subplots import make_subplots
+import pathlib
 
 st.set_page_config(
     page_title="Analitza el teu entrenament",
@@ -25,6 +26,8 @@ load_dotenv()
 # Try to get from streamlit secrets first (for cloud deployment)
 url: str = st.secrets.get("SUPABASE_URL")
 key: str = st.secrets.get("SUPABASE_KEY")
+
+current_dir = pathlib.Path(__file__).parent.resolve()
 
 if not url or not key:
     st.error("Missing Supabase credentials. Please check your environment variables or secrets.")
@@ -313,7 +316,7 @@ def add_intensity_index(df: pd.DataFrame, reference_pace: float, race_distance: 
     
     st.markdown(
     f"""
-    ###### El ritme màxim estimat que pots mantenir en una hora és {adjusted_reference_pace_str}
+    ###### El ritme màxim estimat que pots mantenir durant una hora és {adjusted_reference_pace_str}
     """
     )
 
@@ -334,8 +337,6 @@ def speed_to_pace(speed_kmh):
 def main():
     with st.sidebar:
         """
-        Hola!
-
         Escriu-me per xarxes o envia'm un mail amb qualsevol dubte o suggerència que tinguis.
         """
         col1sb, col2sb, col3sb = st.columns(3)
@@ -385,10 +386,14 @@ def main():
         """
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
-    """    
-    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**. Modificant qualsevol d'aquests tres components durant l'entrenament aconseguim adaptacions que milloren el nostre estat de forma.
+    """
+    Hola! Em dic Fernando i he creat aquesta aplicació per intentar ajudar-te a entendre algunes dades bàsiques sobre el teu entrenament.  
+
+    Si estàs començant o no tens un entrenador, pot ser difícil saber si estem fent bé les coses. El meu objectiu és que a més de veure el teu progrés aprenguis algun concepte bàsic sobre entrenament.
     
     Recorda que les dades també tenen limitacions i que hi ha factors com l'estrès personal, historial esportiu... que també aftecten a l'estat de forma i no es poden quantificar.
+
+    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són els tres pilars bàsics que podem modificar per millorar.
     """
     df = None
     with st.container(border=True):
@@ -458,7 +463,7 @@ def main():
                     }}
                     </style>
                     <div class="strava-button">
-                        <a href="{AUTH_URL}">{strava_svg}</a>
+                        <a href="{AUTH_URL}" target="_self">{strava_svg}</a>
                     </div>
                     """, unsafe_allow_html=True)
                 st.write("")
@@ -532,7 +537,7 @@ def main():
         st.divider()     
         """
         ### **Volum**
-        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma. Una bona norma general és estar al voltant del 10% de variació setmanal.
+        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma. Una bona norma general és estar al voltant del **10% de variació setmanal**.
 
         Si entrenes per muntanya, pot ser més útil fer servir temps i no distància per tenir en compte la desigualtat del terreny i el desnivell.
         """
@@ -699,6 +704,8 @@ def main():
             st.plotly_chart(fig_time, use_container_width=True)
 
         """        
+        ##### Les sortides llargues
+
         Un entrenament amb molts beneficis per proves de resistència és una sortida llarga.
 
         Com de llarg dependrà del teu nivell i objectiu, però el més important és **començar amb una distància que et permeti progressar setmana a setmana** sense impactar excessivament en la resta de sessions. 
@@ -904,8 +911,13 @@ def main():
         """      
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
             st.write("""
-            Quan vagis a pujar la teva activitat, selecciona la opció 'Cursa' al desplegable 'Tipus d'activitat'.
+            Quan vagis a pujar la teva activitat, selecciona el primer desplegable sota '^^Detalls' i selecciona 'Prueba' (per defecte està marcat com 'Entrenamiento').
             """)
+            col1img, col2img = st.columns(2)
+            with col1img:
+                st.image(f"{current_dir}/assets/IMG_1238.jpg", width=300)
+            with col2img:
+                st.image(f"{current_dir}/assets/IMG_1237.jpg", width=300)
         # Get reference race speed (maximum speed from workout_type = 1)
         race_activities = df_filtered[df_filtered['workout_type'] == 1]
         # Format race activities for display
@@ -1029,106 +1041,140 @@ def main():
 
         st.divider()
 
-        
-        """
-        ### **Bonus (si tens dades de freqüència cardíaca)**
-        """
-        """
-        #### Eficiència aeròbica
-
-        La freqüència cardíaca és una mesura de la resposta del teu cos a l'exercici. De forma indirecta, ens indica el treball que estàs realitzant tot i que pot veure's afectat per factors com la temperatura corporal, la fatiga i la hidratacaió.
-        
-        Tot i les limitacions, per comprovar la capacitat aeròbica és útil analitzar la relació entre càrrega externa (ritme) i càrrega interna (freqüència cardíaca) i veure com evoluciona en el temps.
-
-        En general, una **FC més baixa per ritmes semblants** (quan és consistent en el temps) indica una millora de la capacitat aeròbica.
-        
-        """
-        with st.form("Configura l'anàlisi:"):
+        if 'average_heartrate' in df_filtered.columns:
             """
-            *Utilitza els filtres per seleccionar entrenaments que realitzis freqüentment i que siguin semblants entre ells. Als entrenaments més llargs, la FC pot veure's afectada per la deshidratació i la fatiga acumulada.*
+            ### **Bonus (si tens dades de freqüència cardíaca)**
             """
-            col1, col2 = st.columns(2,gap="medium")
-            with col1:
-                min_dist = int(df_filtered['distance'].min())
-                max_dist = int(df_filtered['distance'].max()) + 3
-                distance_options = list(range(min_dist, max_dist))
-                
-                selected_distance = st.select_slider(
-                    '**Distància (km):**',
-                    options=distance_options,  # Use the list of integers
-                    value=(min_dist, max_dist - 1)
-                ) 
-                sports = df_filtered['type'].unique()
-                selected_sport = st.selectbox(label='**Activitat:**',options=sports)
+            """
+            #### Eficiència aeròbica
 
-            with col2:
-                min_elev = int(df_filtered['elevation_gain'].min())
-                max_elev = int(df_filtered['elevation_gain'].max()) + 1
-                elevation_options = list(range(min_elev, max_elev))
+            La freqüència cardíaca és una mesura de la resposta del teu cos a l'exercici. De forma indirecta, ens indica el treball que estàs realitzant tot i que pot veure's afectat per factors com la temperatura corporal, la fatiga i la hidratacaió.
+            
+            Tot i les limitacions, per comprovar la capacitat aeròbica és útil analitzar la relació entre càrrega externa (ritme) i càrrega interna (freqüència cardíaca) i veure com evoluciona en el temps.
 
-                selected_elevation = st.select_slider(
-                    '**Desnivell (m):**',
-                    options=elevation_options,  # Use the list of integers
-                    value=(min_elev, max_elev - 1)
+            En general, una **FC més baixa per ritmes semblants** (quan és consistent en el temps) indica una millora de la capacitat aeròbica.
+            
+            """
+            with st.form("Configura l'anàlisi:"):
+                """
+                *Utilitza els filtres per seleccionar entrenaments que realitzis freqüentment i que siguin semblants entre ells. Als entrenaments més llargs, la FC pot veure's afectada per la deshidratació i la fatiga acumulada.*
+                """
+                col1, col2 = st.columns(2,gap="medium")
+                with col1:
+                    min_dist = int(df_filtered['distance'].min())
+                    max_dist = int(df_filtered['distance'].max()) + 3
+                    distance_options = list(range(min_dist, max_dist))
+                    
+                    selected_distance = st.select_slider(
+                        '**Distància (km):**',
+                        options=distance_options,  # Use the list of integers
+                        value=(min_dist, max_dist - 1)
+                    ) 
+                    sports = df_filtered['type'].unique()
+                    selected_sport = st.selectbox(label='**Activitat:**',options=sports)
+
+                with col2:
+                    min_elev = int(df_filtered['elevation_gain'].min())
+                    max_elev = int(df_filtered['elevation_gain'].max()) + 1
+                    elevation_options = list(range(min_elev, max_elev))
+
+                    selected_elevation = st.select_slider(
+                        '**Desnivell (m):**',
+                        options=elevation_options,  # Use the list of integers
+                        value=(min_elev, max_elev - 1)
+                    )
+                submitted = st.form_submit_button("Guardar")
+                if submitted:
+                    mask = (
+                        (df_filtered['distance'] >= (selected_distance[0])) 
+                        & (df_filtered['distance'] <= (selected_distance[1])) 
+                        & (df_filtered['elevation_gain'] >= selected_elevation[0]) & (df_filtered['elevation_gain'] <= selected_elevation[1]) 
+                        & (df_filtered['type'] == selected_sport)
+                    )
+                    df_aerobic = df_filtered[mask]
+                else:
+                    st.stop()  
+            # Format df_aerobic for display
+            df_display = df_aerobic[[
+                'datetime_local', 'distance', 'moving_time', 
+                'elevation_gain', 'average_speed', 
+                'average_heartrate'
+            ]].copy()
+
+            # Convert datetime_local to datetime for proper sorting
+            df_display['sort_date'] = pd.to_datetime(df_display['datetime_local'])
+            df_display = df_display.sort_values('sort_date', ascending=False)
+
+            # Calculate efficiency index (speed/heart rate ratio)
+            # Multiply by 100 to get more readable numbers
+            df_display['efficiency'] = (df_display['average_speed'] / df_display['average_heartrate'] * 100).round(2)
+
+            # Drop the sorting column and format the display dataframe
+            df_display = df_display.drop('sort_date', axis=1)
+            
+            # Then format the columns
+            df_display['datetime_local'] = df_display['datetime_local'].dt.strftime('%d/%m/%Y')
+            df_display['distance'] = df_display['distance'].apply(lambda x: f"{x:.1f} km")
+            df_display['moving_time'] = df_display['moving_time'].apply(
+                lambda x: f"{int(x//60)}h{int(x%60)}min" if x >= 60 else f"{int(x)}min"
+            )
+            df_display['elevation_gain'] = df_display['elevation_gain'].apply(lambda x: f"{int(x)} m")
+            df_display['average_speed'] = df_display['average_speed'].apply(
+                lambda x: f"{int((60/x))}:{int((60/x)%1 * 60):02d} min/km"
+            )
+            df_display['average_heartrate'] = df_display['average_heartrate'].apply(lambda x: f"{int(x)} bpm" if pd.notnull(x) else None)
+            #df_display['max_heartrate'] = df_display['max_heartrate'].apply(lambda x: f"{int(x)} bpm" if pd.notnull(x) else None)
+            df_display['efficiency'] = df_display['efficiency'].apply(lambda x: f"{x:.2f}" if pd.notnull(x) else None)
+            
+            # Rename columns
+            df_display.columns = [
+                'Data', 'Distància', 'Temps', 'Desnivell', 
+                'Ritme', 'FC mitjana', 'Índex Eficiència'
+            ]
+
+            """
+            Per facilitar l'anàlisi, calculem un índex d'eficiència que representa la **relació entre velocitat i freqüència cardíaca**. 
+            Una tendència incremental de l'índex indica que s'està corrent més ràpid amb menys esforç cardíac, 
+            el que pot ser un indicador de millora en el rendiment.
+
+            Tingues en compte que aquest valor és una simplificació i s'ha d'analitzar conjuntament amb altres dades i factors com desnivell, fatiga, etc.
+            """
+
+            st.dataframe(df_display, use_container_width=True)
+
+            # Sort the data chronologically before creating the plot
+            df_display_sorted = df_display.sort_values('Data', ascending=True)  # Sort by date in ascending order
+
+            # Replace the line_chart with a Plotly figure
+            fig_efficiency = go.Figure()
+
+            # Add the line trace
+            fig_efficiency.add_trace(
+                go.Scatter(
+                    x=df_display['Data'],
+                    y=df_display['Índex Eficiència'].astype(float),  # Convert string back to float
+                    mode='lines+markers',
+                    name='Índex Eficiència'
                 )
-            submitted = st.form_submit_button("Guardar")
-            if submitted:
-                mask = (
-                    (df_filtered['distance'] >= (selected_distance[0])) 
-                    & (df_filtered['distance'] <= (selected_distance[1])) 
-                    & (df_filtered['elevation_gain'] >= selected_elevation[0]) & (df_filtered['elevation_gain'] <= selected_elevation[1]) 
-                    & (df_filtered['type'] == selected_sport)
+            )
+
+            # Update layout with custom y-axis settings
+            fig_efficiency.update_layout(
+                title='Evolució de l\'índex d\'eficiència',
+                xaxis_title='Data',
+                yaxis_title='Índex Eficiència',
+                plot_bgcolor='white',
+                yaxis=dict(
+                    dtick=0.1,  # Set step size for y-axis (adjust this value as needed)
+                    gridcolor='LightGray'
+                ),
+                xaxis=dict(
+                    gridcolor='LightGray'
                 )
-                df_aerobic = df_filtered[mask]
-            else:
-                st.stop()  
-        # Format df_aerobic for display
-        df_display = df_aerobic[[
-            'datetime_local', 'distance', 'moving_time', 
-            'elevation_gain', 'average_speed', 
-            'average_heartrate'
-        ]].copy()
+            )
 
-        # Convert datetime_local to datetime for proper sorting
-        df_display['sort_date'] = pd.to_datetime(df_display['datetime_local'])
-        df_display = df_display.sort_values('sort_date', ascending=False)
-
-        # Calculate efficiency index (speed/heart rate ratio)
-        # Multiply by 100 to get more readable numbers
-        df_display['efficiency'] = (df_display['average_speed'] / df_display['average_heartrate'] * 100).round(2)
-
-        # Drop the sorting column and format the display dataframe
-        df_display = df_display.drop('sort_date', axis=1)
-        
-        # Then format the columns
-        df_display['datetime_local'] = df_display['datetime_local'].dt.strftime('%d/%m/%Y')
-        df_display['distance'] = df_display['distance'].apply(lambda x: f"{x:.1f} km")
-        df_display['moving_time'] = df_display['moving_time'].apply(
-            lambda x: f"{int(x//60)}h{int(x%60)}min" if x >= 60 else f"{int(x)}min"
-        )
-        df_display['elevation_gain'] = df_display['elevation_gain'].apply(lambda x: f"{int(x)} m")
-        df_display['average_speed'] = df_display['average_speed'].apply(
-            lambda x: f"{int((60/x))}:{int((60/x)%1 * 60):02d} min/km"
-        )
-        df_display['average_heartrate'] = df_display['average_heartrate'].apply(lambda x: f"{int(x)} bpm" if pd.notnull(x) else None)
-        #df_display['max_heartrate'] = df_display['max_heartrate'].apply(lambda x: f"{int(x)} bpm" if pd.notnull(x) else None)
-        df_display['efficiency'] = df_display['efficiency'].apply(lambda x: f"{x:.2f}" if pd.notnull(x) else None)
-        
-        # Rename columns
-        df_display.columns = [
-            'Data', 'Distància', 'Temps', 'Desnivell', 
-            'Ritme', 'FC mitjana', 'Índex Eficiència'
-        ]
-
-        """
-        Per facilitar l'anàlisi, calculem un índex d'eficiència que representa la **relació entre velocitat i freqüència cardíaca**. 
-        Una tendència incremental de l'índex indica que s'està corrent més ràpid amb menys esforç cardíac, 
-        el que pot ser un indicador de millora en el rendiment.
-
-        Tingues en compte que aquest valor és una simplificació i s'ha d'analitzar conjuntament amb altres dades i factors com desnivell, fatiga, etc.
-        """
-
-        st.dataframe(df_display, use_container_width=True)
-
+            st.plotly_chart(fig_efficiency, use_container_width=True)
+            st.divider()
+    
 if __name__ == "__main__":
     main()
