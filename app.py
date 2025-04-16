@@ -40,7 +40,12 @@ if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
     st.error("Missing Strava API credentials. Please check your environment variables or secrets.")
     st.stop()
 
-REDIRECT_URI = st.secrets.get("REDIRECT_URI", "http://localhost:8501")  # Use configured URL or default to local
+# Update the REDIRECT_URI logic
+if 'REDIRECT_URI' in st.secrets:
+    REDIRECT_URI = st.secrets['REDIRECT_URI']
+else:
+    REDIRECT_URI = "http://localhost:8501"  # Local development fallback
+
 AUTH_URL = f"http://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=activity:read_all"
 
 def highlight_high_percentage(val):
