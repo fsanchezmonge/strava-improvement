@@ -337,7 +337,7 @@ def speed_to_pace(speed_kmh):
 def main():
     with st.sidebar:
         """
-        Escriu-me per xarxes o envia'm un mail amb qualsevol dubte o suggerència que tinguis.
+        Em pots contactar per mail o Strava amb qualsevol dubte o suggerència que tinguis.
         """
         col1sb, col2sb, col3sb = st.columns(3)
         
@@ -352,16 +352,6 @@ def main():
             """, unsafe_allow_html=True)
         
         with col2sb:
-            st.markdown("""
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-                <div style="display: flex; justify-content: center;">
-                    <a href="https://twitter.com/@fsanchez_mp" target="_blank" style="color: #1DA1F2; text-decoration: none;">
-                        <i class="fab fa-twitter fa-2x"></i>
-                    </a>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        with col3sb:
             st.markdown("""
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
                 <div style="display: flex; justify-content: center;">
@@ -387,11 +377,9 @@ def main():
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """
-    Hola! He creat aquesta aplicació per intentar ajudar-te a entendre algunes dades bàsiques sobre el teu entrenament.  
-
-    Si estàs començant o no tens un entrenador, pot ser difícil saber si estem fent bé les coses. El meu objectiu és que a més de veure el teu progrés aprenguis algun concepte bàsic sobre entrenament.
+    Hola! He creat aquesta aplicació per intentar ajudar-te a entendre algunes dades bàsiques sobre el teu entrenament i alguns conceptes bàsics perquè puguis aplicar a properes preparacions.  
     
-    Recorda que les dades també tenen limitacions i que hi ha factors com l'estrès personal, historial esportiu... que també aftecten a l'estat de forma i no es poden quantificar.
+    Recorda que les dades també tenen limitacions i això és una simplificació on no s'estan tenint en compte factors com l'estrès personal, historial esportiu, etc.
 
     L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són els tres pilars bàsics que podem modificar per millorar.
     """
@@ -704,7 +692,7 @@ def main():
             st.plotly_chart(fig_time, use_container_width=True)
 
         """        
-        ##### Les sortides llargues
+        ##### Sortides llargues
 
         Un entrenament amb molts beneficis per proves de resistència és una sortida llarga.
 
