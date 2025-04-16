@@ -351,7 +351,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
         
-        with col2sb:
+        with col3sb:
             st.markdown("""
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
                 <div style="display: flex; justify-content: center;">
