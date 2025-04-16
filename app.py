@@ -734,7 +734,7 @@ def main():
 
         # Then format the columns
         longest_runs_display['datetime_local'] = longest_runs_display['datetime_local'].dt.strftime('%d/%m/%Y')
-        
+
         # Format moving time to hours and minutes
         longest_runs_display['moving_time'] = longest_runs_display['moving_time'].apply(
             lambda x: f"{int(x//60)}h{int(x%60)}min" if x >= 60 else f"{int(x)}min"
