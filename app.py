@@ -387,7 +387,7 @@ def main():
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """
-    Hola! Em dic Fernando i he creat aquesta aplicació per intentar ajudar-te a entendre algunes dades bàsiques sobre el teu entrenament.  
+    Hola! He creat aquesta aplicació per intentar ajudar-te a entendre algunes dades bàsiques sobre el teu entrenament.  
 
     Si estàs començant o no tens un entrenador, pot ser difícil saber si estem fent bé les coses. El meu objectiu és que a més de veure el teu progrés aprenguis algun concepte bàsic sobre entrenament.
     
@@ -490,7 +490,7 @@ def main():
             with col1:
                 selected_dates = st.date_input(
                     "",
-                    value=(pd.to_datetime('now').date() - pd.DateOffset(days=30),pd.to_datetime('now').date()),
+                    value=(pd.to_datetime('now').date() - pd.DateOffset(days=60),pd.to_datetime('now').date()),
                     min_value=pd.to_datetime(df['datetime_local'].min()).date(),
                     max_value=pd.to_datetime('now').date(),
                     label_visibility="collapsed"
