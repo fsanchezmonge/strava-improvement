@@ -378,7 +378,7 @@ def main():
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """    
     Benvingut! He creat aquesta aplicació perquè puguis conèixer dades bàsiques sobre el teu entrenament que t'ajudaran a entendre millor com entrenes i respondre a les següents preguntes:
-    - Quantes hores entreno de mitjana?
+    - Quantes hores he entrenat de mitjana?
     - Estic fent les sortides llargues massa llargues?
     - Estic corrent més ràpid del que hauria?
 
@@ -898,7 +898,7 @@ def main():
         """
         ### **Intensitat**
 
-        Per estimar la intensitat dels teus entrenaments, farem servir el ritme de la cursa amb el ritme més alt dintre del període seleccionat o el que introdueixis si no hi ha cap.
+        Per estimar la intensitat dels teus entrenaments, farem servir el ritme de la cursa amb el ritme més alt dintre del període seleccionat o el que introdueixis manualment.
         """      
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
             st.write("""
@@ -938,25 +938,31 @@ def main():
                 hide_index=True
             )
             race_speed = race_activities['average_speed'].iloc[0]
-            race_pace = speed_to_pace(race_speed)
-            race_distance = race_activities['distance'].iloc[0]
+            race_pace_detected = speed_to_pace(race_speed)
+            race_distance_detected = race_activities['distance'].iloc[0]
+        
+            st.write("O introueix un altre ritme i distància d'una cursa anterior o un entrenament:")
+
+        with st.container(border=True):
+            cols1, cols2, cols3 = st.columns(3)
+            with cols1:
+                race_minutes = st.number_input("Minuts:",step= 1, value=5, min_value=2, max_value=10)
+            with cols2:
+                race_seconds = st.number_input("Segons:", step= 1, value=30, min_value=0, max_value=59)
+            
+            race_pace_manual = (race_minutes + race_seconds/60)
+            race_speed_manual = round(pace_to_speed(race_pace_manual),2)
+            with cols3:
+                race_distance_manual = st.number_input("Distància (km):", step= 1, value=10, min_value=5, max_value=100)
+
+        selection = st.radio("Selecciona el ritme de referència:", options=["Ritme detectat de cursa", "Ritme manual"])       
+        if selection == "Ritme detectat de cursa":
+            race_distance, race_pace = (race_distance_detected, race_pace_detected)
         else:
-            with st.container(border=True):
-                st.write("Introueix ritme i distància del que vulguis utilitzar com a referència de ritme de competició:")
-                cols1, cols2, cols3 = st.columns(3)
-                with cols1:
-                    race_minutes = st.number_input("Minuts:",step= 1, value=5, min_value=2, max_value=10)
-                with cols2:
-                    race_seconds = st.number_input("Segons:", step= 1, value=30, min_value=0, max_value=59)
-                
-                race_pace = (race_minutes + race_seconds/60)
-                race_speed = round(pace_to_speed(race_pace),2)
-                with cols3:
-                    race_distance = st.number_input("Distància (km):", step= 1, value=10, min_value=2, max_value=100)
-       
+            race_distance, race_pace = (race_distance_manual, race_pace_manual)
 
         """
-        Amb aquest ritme, estimarem el que seria el ritme màxim que podries mantenir durant 1 hora, i a partir d'aquí classificarem cada entrenament en baixa, mitja o alta intensitat.
+        Amb aquest ritme, estimarem el ritme màxim que podries mantenir durant 1 hora, que és un indicador molt rellevant del teu nivell de resistència, i el farem servir per classificar cada entrenament en baixa, mitja o alta intensitat.
         """          
                 # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
