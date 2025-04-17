@@ -763,7 +763,14 @@ def main():
         # Drop any columns you want to remove BEFORE creating the Styler object
         longest_runs_display = longest_runs_display.drop('numeric_percentage', axis=1)
         
+        longest_runs = longest_runs[longest_runs['workout_type'] != 1]
+        col1lr, col2lr = st.columns(2)
+        with col1lr:
+            st.metric("Entrenament més llarg (sense curses)", f"{round(longest_runs['distance'].max(),1)} km")
+        with col2lr:
+            st.metric("Distància mitjana", f"{round(longest_runs['distance'].mean(),1)} km")
         # Display the styled dataframe with sorting preserved
+        
         st.write("**Sessió més llarga per setmana**")
         st.dataframe(
             longest_runs_display,
