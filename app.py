@@ -376,17 +376,20 @@ def main():
         """
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
-    """
-    Hola! He creat aquesta aplicació per intentar ajudar-te a entendre algunes dades bàsiques sobre el teu entrenament i alguns conceptes bàsics perquè puguis aplicar a properes preparacions.  
-    
-    Recorda que les dades també tenen limitacions i això és una simplificació on no s'estan tenint en compte factors com l'estrès personal, historial esportiu, etc.
+    """    
+    Benvingut! He creat aquesta aplicació perquè puguis conèixer dades bàsiques sobre el teu entrenament que t'ajudaran a entendre millor com entrenes i respondre a les següents preguntes:
+    - Quantes hores entreno de mitjana?
+    - Estic fent les sortides llargues massa llargues?
+    - Estic corrent més ràpid del que hauria?
+
+    Conèixer la resposta et pot ajudar a planificar millor properes preparacions i reduïr risc de lesions, però recorda que les dades també tenen limitacions i això és una simplificació on no s'estan tenint en compte factors com l'estrès personal, historial esportiu, etc.
 
     L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són els tres pilars bàsics que podem modificar per millorar.
     """
     df = None
     with st.container(border=True):
         """
-        1. Conecta el teu perfil d'Strava. Fes click al botó i autoritza l'accés a les dades del teu perfil.
+        1. Connecta el teu perfil d'Strava. Fes click al botó i autoritza l'accés a les dades del teu perfil.
 
         """
         # Initialize session state
@@ -895,7 +898,7 @@ def main():
         """
         ### **Intensitat**
 
-        Per estimar la intensitat dels teus entrenaments, farem servir el ritme de la teva última cursa o el que introdueixis si no hi ha cap cursa en el període seleccionat.
+        Per estimar la intensitat dels teus entrenaments, farem servir el ritme de la cursa amb el ritme més alt dintre del període seleccionat o el que introdueixis si no hi ha cap.
         """      
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
             st.write("""
@@ -907,7 +910,8 @@ def main():
             with col2img:
                 st.image(f"{current_dir}/assets/IMG_1237.jpg", width=300)
         # Get reference race speed (maximum speed from workout_type = 1)
-        race_activities = df_filtered[df_filtered['workout_type'] == 1]
+        race_activities = df_filtered[df_filtered['workout_type'] == 1].sort_values('average_speed', ascending=False).head(1)
+        
         # Format race activities for display
         if not race_activities.empty:
             races_display = race_activities[[
@@ -927,7 +931,7 @@ def main():
             # Rename columns
             races_display.columns = ['Nom', 'Tipus', 'Data', 'Distància (km)', 'Temps (h:min)', 'Ritme (min/km)']
             
-            st.write("Aquesta és la cursa més recent detectada:")
+            st.write("Aquesta és la cursa amb ritme més alt detectada:")
             st.dataframe(
                 races_display,
                 use_container_width=True,
@@ -949,6 +953,8 @@ def main():
                 race_speed = round(pace_to_speed(race_pace),2)
                 with cols3:
                     race_distance = st.number_input("Distància (km):", step= 1, value=10, min_value=2, max_value=100)
+       
+
         """
         Amb aquest ritme, estimarem el que seria el ritme màxim que podries mantenir durant 1 hora, i a partir d'aquí classificarem cada entrenament en baixa, mitja o alta intensitat.
         """          
