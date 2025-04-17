@@ -768,7 +768,7 @@ def main():
         with col1lr:
             st.metric("Entrenament més llarg (sense curses)", f"{round(longest_runs['distance'].max(),1)} km")
         with col2lr:
-            st.metric("Distància mitjana", f"{round(longest_runs['distance'].mean(),1)} km")
+            st.metric("Distància mitjana long runs", f"{round(longest_runs['distance'].mean(),1)} km")
         # Display the styled dataframe with sorting preserved
         
         st.write("**Sessió més llarga per setmana**")
