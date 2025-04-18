@@ -1,6 +1,6 @@
 # Strava Activity Tracker
 
-A Streamlit application that connects to your Strava account and displays your activities in a clean, organized dashboard. The app uses Supabase for data storage.
+A Streamlit application that connects to your Strava account and displays an interactive analysis of your training leading up to an event. The dates of the analysed period can be modified by the user. The app uses Supabase to store refresh tokens and athlete ids.
 
 ## Setup Instructions
 
@@ -35,26 +35,11 @@ A Streamlit application that connects to your Strava account and displays your a
    ```
 
 ## Features
-
-- OAuth2 authentication with Strava
 - Fetches all your Strava activities
-- Displays activities in a clean, sortable table
-- Stores activities in Supabase for faster subsequent loads
-- Converts units to more readable formats (km, km/h, etc.)
-- Shows key metrics like distance, time, speed, and elevation gain
+- Shows key metrics like distance, time, speed, and elevation gain, frequency of training, and an intensity polarization analysis
 
 ## Usage
 
 1. Click the "Connect with Strava" button
 2. Authorize the application
-3. Click "Fetch Activities" to load your activities
-4. Your activities will be displayed in a table and stored in Supabase
-
-## Data Storage
-
-Activities are stored in Supabase with the following structure:
-- Primary key: Activity ID from Strava
-- Athlete ID for data segregation
-- Basic activity metrics (distance, time, speed, etc.)
-- Timestamps for activity start
-- Additional metrics (heart rate, elevation, etc.) 
+3. Your activities will be displayed in a table and stored in Supabase
