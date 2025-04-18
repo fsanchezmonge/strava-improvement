@@ -477,6 +477,28 @@ def get_segments_data(activities, get_activity_details, get_segment_details, acc
     
     return df_segments
 
+# After the supabase client initialization, add this function:
+def log_user_session(athlete_id: int, event_type: str, event_data: dict = None):
+    """
+    Log user session data to Supabase.
+    
+    Parameters:
+    - athlete_id: Strava athlete ID
+    - event_type: Type of event (e.g., 'session_start', 'data_load', 'analysis')
+    - event_data: Optional dictionary with additional event data
+    """
+    try:
+        log_entry = {
+            'athlete_id': athlete_id,
+            'event_type': event_type,
+            'event_data': event_data,
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }
+        
+        supabase.table('app_logs').insert(log_entry).execute()
+    except Exception as e:
+        st.error(f"Error logging event: {str(e)}")
+
 def main():
     with st.sidebar:
         """
@@ -606,10 +628,28 @@ def main():
             st.write("")
             activities = get_activities(st.session_state.access_token)
             if activities:
+                # Log successful data load
+                log_user_session(
+                    st.session_state.athlete_id,
+                    'data_load',
+                    {
+                        'activities_count': len(activities),
+                        'date_range': [
+                            min(a['datetime_local'] for a in activities),
+                            max(a['datetime_local'] for a in activities)
+                        ]
+                    }
+                )
+                
                 # Convert activities to DataFrame
                 df = pd.DataFrame(activities)
                 st.success("Activitats carregades!")
             else:
+                # Log failed data load
+                log_user_session(
+                    st.session_state.athlete_id,
+                    'data_load_failed'
+                )
                 st.warning("No s'han trobat activitats.")
     
         # Save to Supabase
@@ -1225,5 +1265,17 @@ def main():
         - [Training for the Uphill Athlete](https://uphillathlete.com/product/training-for-the-uphill-athlete-book/)
         - [The truth about long runs](https://youtu.be/Qcnlhzw0dQY?si=HatCwe94pM9Qb7Ld)
         """)
+
+    # After analysis is performed (e.g., after processing selected dates), add:
+    if df is not None and len(selected_dates) == 2:
+        log_user_session(
+            st.session_state.athlete_id,
+            'analysis_performed',
+            {
+                'date_range': [str(selected_dates[0]), str(selected_dates[1])],
+                'activity_type': selected_type,
+                'activities_analyzed': len(df_filtered)
+            }
+        )
 if __name__ == "__main__":
     main()
