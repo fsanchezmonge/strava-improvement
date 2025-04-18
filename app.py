@@ -728,7 +728,7 @@ def main():
         # Calculate percentage
         longest_runs['percentage'] = (longest_runs['distance'] / longest_runs['weekly_total'] * 100)
 
-        # Select columns for display
+        # Select columns for display - keep numeric percentage for styling
         longest_runs_display = longest_runs[[
             'datetime_local', 'name', 'distance', 'moving_time', 'average_speed', 'percentage'
         ]].copy()
@@ -736,48 +736,44 @@ def main():
         # Sort by datetime first (while it's still in datetime format)
         longest_runs_display = longest_runs_display.sort_values('datetime_local', ascending=False)
 
-        # Then format the columns
+        # Format display columns (except percentage)
         longest_runs_display['datetime_local'] = longest_runs_display['datetime_local'].dt.strftime('%d/%m/%Y')
-
-        # Format moving time to hours and minutes
         longest_runs_display['moving_time'] = longest_runs_display['moving_time'].apply(
             lambda x: f"{int(x//60)}h{int(x%60)}min" if x >= 60 else f"{int(x)}min"
         )
-
         longest_runs_display['distance'] = longest_runs_display['distance'].apply(lambda x: f"{x:.1f} km")
-
-        # Convert speed (km/h) to pace (min/km)
         longest_runs_display['average_speed'] = longest_runs_display['average_speed'].apply(
-            lambda x: f"{int((60/x))}:{int((60/x)%1 * 60):02d} min/km"
+            lambda x: f"{int((60/x))}:{int((60/x)%1 * 60):02d} min/km" if pd.notna(x) and x > 0 else "-"
         )
+        # The 'percentage' column is still numeric here
 
-        # Format percentage
-        longest_runs_display['percentage'] = longest_runs_display['percentage'].apply(lambda x: f"{x:.1f}%")
-
-        # Rename columns
+        # Rename columns for final display
         longest_runs_display.columns = ['Data', 'Nom', 'Distància', 'Temps', 'Ritme', '% del total']
 
-        # First, create a copy of the percentage column with numeric values for comparison
-        longest_runs_display['numeric_percentage'] = longest_runs['percentage']
-                
-        # Drop any columns you want to remove BEFORE creating the Styler object
-        longest_runs_display = longest_runs_display.drop('numeric_percentage', axis=1)
-        
-        longest_runs = longest_runs[longest_runs['workout_type'] != 1]
-        col1lr, col2lr = st.columns(2)
-        with col1lr:
-            st.metric("Entrenament més llarg (sense curses)", f"{round(longest_runs['distance'].max(),1)} km")
-        with col2lr:
-            st.metric("Distància mitjana long runs", f"{round(longest_runs['distance'].mean(),1)} km")
-        # Display the styled dataframe with sorting preserved
-        
+        # Define styling function for percentage background
+        def style_percentage_background(val):
+            if pd.isna(val):
+                return '' # No style for NaN
+            elif 30 <= val <= 40:
+                return 'background-color: lightgreen'
+            else:
+                return 'background-color: #FFFFE0' # Light Yellow hex
+
+        # Display the styled dataframe using Styler
+        # This replaces the previous st.dataframe call and the code dropping 'numeric_percentage'
         st.write("**Sessió més llarga per setmana**")
         st.dataframe(
-            longest_runs_display,
+            longest_runs_display.style.apply(
+                lambda col: col.map(style_percentage_background), # Apply style based on numeric value
+                subset=['% del total']
+            ).format(
+                # Format to string *after* applying style based on number
+                {'% del total': lambda x: f"{x:.1f}%" if pd.notna(x) else "-"}
+            ),
             use_container_width=True,
-            hide_index=True  # Optional: hide the index if you don't need it
+            hide_index=True
         )
-        
+
         # Create line chart for longest runs with weekly distance bars
         fig_longest = go.Figure()
         
@@ -919,7 +915,11 @@ def main():
         # Get reference race speed (maximum speed from workout_type = 1)
         race_activities = df_filtered[df_filtered['workout_type'] == 1].sort_values('average_speed', ascending=False).head(1)
         
-        # Format race activities for display
+        # Initialize detected race variables
+        race_pace_detected = None
+        race_distance_detected = None
+
+        # Format race activities for display if any exist
         if not race_activities.empty:
             races_display = race_activities[[
                 'name', 'type', 'datetime_local', 'distance', 'moving_time', 'average_speed'
@@ -944,32 +944,57 @@ def main():
                 use_container_width=True,
                 hide_index=True
             )
+            # Assign detected values
             race_speed = race_activities['average_speed'].iloc[0]
             race_pace_detected = speed_to_pace(race_speed)
             race_distance_detected = race_activities['distance'].iloc[0]
-        
-            st.write("O introueix un altre ritme i distància d'una cursa anterior o un entrenament:")
 
+            st.write("O introueix un altre ritme i distància d'una cursa anterior o un entrenament:")
+        else:
+            st.warning("No s'ha detectat cap cursa al periode seleccionat. Introdueix un ritme i distància de referència manualment:")
+
+
+        # Manual entry section (always shown)
         with st.container(border=True):
             cols1, cols2, cols3 = st.columns(3)
             with cols1:
-                race_minutes = st.number_input("Minuts:",step= 1, value=5, min_value=2, max_value=10)
+                race_minutes = st.number_input("Minuts:",step= 1, value=5, min_value=2, max_value=10, key="manual_min")
             with cols2:
-                race_seconds = st.number_input("Segons:", step= 1, value=30, min_value=0, max_value=59)
-            
+                race_seconds = st.number_input("Segons:", step= 1, value=30, min_value=0, max_value=59, key="manual_sec")
+
             race_pace_manual = (race_minutes + race_seconds/60)
             race_speed_manual = round(pace_to_speed(race_pace_manual),2)
             with cols3:
-                race_distance_manual = st.number_input("Distància (km):", step= 1, value=10, min_value=5, max_value=100)
+                race_distance_manual = st.number_input("Distància (km):", step= 1, value=10, min_value=5, max_value=100, key="manual_dist")
 
-        selection = st.radio("Selecciona el ritme de referència:", options=["Ritme detectat de cursa", "Ritme manual"])       
-        if selection == "Ritme detectat de cursa":
-            race_distance, race_pace = (race_distance_detected, race_pace_detected)
+        # Conditional radio button selection
+        radio_options = []
+        default_index = 0
+        if race_pace_detected is not None:
+            radio_options.append("Ritme detectat de cursa")
+            radio_options.append("Ritme manual")
+            # Keep default index 0 (detected) if available
         else:
-            race_distance, race_pace = (race_distance_manual, race_pace_manual)
+            radio_options.append("Ritme manual")
+            # default_index remains 0 (manual) as it's the only option
+
+        selection = st.radio(
+            "Selecciona el ritme de referència:",
+            options=radio_options,
+            index=default_index
+        )
+
+        # Assign final race pace and distance based on selection
+        if selection == "Ritme detectat de cursa":
+            # This option is only possible if race_pace_detected is not None
+            race_distance = race_distance_detected
+            race_pace = race_pace_detected
+        else: # selection == "Ritme manual"
+            race_distance = race_distance_manual
+            race_pace = race_pace_manual
 
         """
-        Amb aquest ritme, estimarem el ritme màxim que podries mantenir durant 1 hora, que és un indicador molt rellevant del teu nivell de resistència, i el farem servir per classificar cada entrenament en baixa, mitja o alta intensitat.
+        Amb aquest ritme, estimarem el que seria el ritme màxim que podries mantenir durant 1 hora, i a partir d'aquí classificarem cada entrenament en baixa, mitja o alta intensitat.
         """          
                 # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
