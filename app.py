@@ -128,7 +128,7 @@ def ensure_fresh_token():
         
     return stored_token['access_token']
 
-@st.cache_data(show_spinner="S'estan carregant les teves activitiats...")
+@st.cache_data(show_spinner="S'estan carregant les teves activitats...")
 def get_activities(access_token):
     """Fetch athlete's activities from Strava"""
     activities_url = "https://www.strava.com/api/v3/athlete/activities"
