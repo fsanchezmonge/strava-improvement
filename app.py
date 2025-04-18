@@ -334,6 +334,149 @@ def speed_to_pace(speed_kmh):
     minutes_per_km = 60 / speed_kmh
     return minutes_per_km
 
+def get_activity_details(activity_id, access_token):
+    url = f"https://www.strava.com/api/v3/activities/{activity_id}"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    response = requests.get(url, headers=headers)
+    return response.json()
+
+def get_segment_details(segment_id, access_token):
+    url = f"https://www.strava.com/api/v3/segments/{segment_id}"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # Raise an error for bad responses
+    return response.json()
+
+def get_starred_segments(access_token):
+    """
+    Get all starred segments for the authenticated athlete.
+    
+    Parameters:
+    - access_token: Strava API access token
+    
+    Returns:
+    - List of starred segment IDs
+    """
+    url = "https://www.strava.com/api/v3/segments/starred"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    
+    starred_segments = []
+    page = 1
+    
+    while True:
+        params = {'page': page, 'per_page': 200}
+        response = requests.get(url, headers=headers, params=params)
+        
+        if response.status_code != 200:
+            st.error(f"Error getting starred segments: {response.status_code}")
+            break
+            
+        data = response.json()
+        if not data:
+            break
+            
+        starred_segments.extend([segment['id'] for segment in data])
+        page += 1
+    
+    return starred_segments
+
+def get_segments_data(activities, get_activity_details, get_segment_details, access_token):
+    """
+    Extract segment data from activities and return as a DataFrame.
+    Only includes efforts on starred segments.
+    
+    Parameters:
+    - activities: List of activities from Strava
+    - get_activity_details: Function to get detailed activity information
+    - get_segment_details: Function to get detailed segment information
+    - access_token: Strava API access token
+    
+    Returns:
+    - pandas DataFrame containing segment information for starred segments
+    """
+    # Get starred segments first
+    starred_segments = get_starred_segments(access_token)
+    
+    if not starred_segments:
+        st.warning("No starred segments found. Star some segments on Strava to track them here!")
+        return pd.DataFrame()
+    
+    segment_data = []
+    
+    for activity in activities:
+        activity_id = activity['activity_id']
+        activity_details = get_activity_details(activity_id, access_token)
+        
+        if 'segment_efforts' not in activity_details:
+            continue
+            
+        for segment_effort in activity_details['segment_efforts']:
+            segment_id = segment_effort['segment']['id']
+            
+            # Skip if segment is not starred
+            if segment_id not in starred_segments:
+                continue
+                
+            segment_details = get_segment_details(segment_id, access_token)
+            
+            # Extract basic effort data
+            elapsed_time = segment_effort['elapsed_time']
+            distance = segment_effort['distance']
+            average_speed = segment_effort.get('average_speed', distance / elapsed_time)
+            
+            # Calculate pace
+            pace_per_km = elapsed_time / (distance / 1000)
+            pace_minutes = int(pace_per_km // 60)
+            pace_seconds = int(pace_per_km % 60)
+            pace_str = f"{pace_minutes}:{pace_seconds:02d}"
+            
+            # Get PR time if available
+            pr_elapsed_time = None
+            pr_pace_str = None
+            if 'athlete_segment_stats' in segment_details:
+                pr_elapsed_time = segment_details['athlete_segment_stats'].get('pr_elapsed_time')
+                if pr_elapsed_time:
+                    pr_pace = pr_elapsed_time / (distance / 1000)
+                    pr_minutes = int(pr_pace // 60)
+                    pr_seconds = int(pr_pace % 60)
+                    pr_pace_str = f"{pr_minutes}:{pr_seconds:02d}"
+            
+            # Create dictionary with segment information
+            segment_info = {
+                'activity_id': activity_id,
+                'activity_name': activity['name'],
+                'activity_date': activity['datetime_local'],
+                'segment_id': segment_id,
+                'segment_name': segment_details['name'],
+                'distance_km': round(distance / 1000, 2),
+                'elapsed_time_sec': elapsed_time,
+                'elapsed_time_str': f"{int(elapsed_time // 60)}:{int(elapsed_time % 60):02d}",
+                'average_speed_kmh': round(average_speed * 3.6, 2),
+                'pace_min_km': pace_str,
+                'pr_elapsed_time': pr_elapsed_time,
+                'pr_pace_min_km': pr_pace_str
+            }
+            
+            segment_data.append(segment_info)
+    
+    # Create DataFrame
+    df_segments = pd.DataFrame(segment_data)
+    
+    if not df_segments.empty:
+        # Sort by segment name and date
+        df_segments = df_segments.sort_values(['segment_name', 'activity_date'])
+        
+        # Format the date
+        df_segments['activity_date'] = pd.to_datetime(df_segments['activity_date']).dt.strftime('%d/%m/%Y')
+    
+    return df_segments
+
 def main():
     with st.sidebar:
         """
@@ -1070,6 +1213,127 @@ def main():
         )
 
         st.plotly_chart(fig_intensity, use_container_width=True)
+
+        st.divider()
+
+        # Example usage
+        # Get only the last activity from the filtered DataFrame
+        last_activity = df_filtered.to_dict('records')
+        df_segments = get_segments_data(last_activity, get_activity_details, get_segment_details, st.session_state.access_token)
+
+        if not df_segments.empty:
+            # Group segments by name to get unique segments
+            unique_segments = df_segments['segment_name'].unique()
+            
+            st.write("### Starred Segments")
+            st.write("Select a segment to track your performance over time:")
+            
+            # Add segment selector
+            selected_segment = st.selectbox(
+                "Choose a segment:",
+                options=unique_segments,
+                key="segment_selector"
+            )
+            
+            # Filter data for selected segment
+            segment_data = df_segments[df_segments['segment_name'] == selected_segment].copy()
+            
+            # Sort by date for proper time series display
+            segment_data = segment_data.sort_values('activity_date')
+
+            # Create two columns for metrics and chart
+            col1seg, col2seg = st.columns([1, 2])
+            
+            with col1seg:
+                # Show segment details
+                #st.write(f"**{selected_segment}**")
+                # Calculate and display best and average times
+                best_time = segment_data['elapsed_time_sec'].min()
+                avg_time = segment_data['elapsed_time_sec'].mean()
+                num_attempts = len(segment_data)
+                
+                best_time_str = f"{int(best_time // 60)}:{int(best_time % 60):02d}"
+                avg_time_str = f"{int(avg_time // 60)}:{int(avg_time % 60):02d}"
+                
+                # Calculate PR gap percentage if PR exists and prepare delta
+                delta = None
+                if 'pr_elapsed_time' in segment_data.columns and not segment_data['pr_elapsed_time'].isna().all():
+                    pr_time = segment_data['pr_elapsed_time'].min()
+                    pr_gap = ((best_time - pr_time) / pr_time) * 100
+                    delta = f"{pr_gap:+.1f}%"
+                
+                st.metric("Attempts", num_attempts)
+                st.metric(
+                    "Best Time", 
+                    best_time_str, 
+                    delta=delta,
+                    delta_color="inverse",
+                    help="Percentage difference from PR. Positive values (red) mean slower than PR, negative values (green) mean faster than PR."
+                )
+                st.metric("Average Time", avg_time_str)
+            
+            with col2seg:
+                # Create performance evolution chart
+                fig = go.Figure()
+                
+                # Convert seconds to minutes for y-axis
+                segment_data['elapsed_time_min'] = segment_data['elapsed_time_sec'] / 60
+                
+                # Add elapsed time line
+                fig.add_trace(go.Scatter(
+                    x=segment_data['activity_date'],
+                    y=segment_data['elapsed_time_min'],
+                    mode='lines+markers',
+                    name='Time',
+                    text=segment_data['elapsed_time_str'],
+                    hovertemplate="Date: %{x}<br>" +
+                                 "Time: %{text}<br>" +
+                                 "Activity: %{customdata}",
+                    customdata=segment_data['activity_name']
+                ))
+                
+                # Add PR line if available
+                if 'pr_elapsed_time' in segment_data.columns and not segment_data['pr_elapsed_time'].isna().all():
+                    pr_time = segment_data['pr_elapsed_time'].min() / 60  # Convert to minutes
+                    fig.add_hline(
+                        y=pr_time,
+                        line_dash="dash",
+                        line_color="green",
+                        annotation_text=f"PR: {int(pr_time)}:{int((pr_time % 1) * 60):02d}",
+                        annotation_position="top right"
+                    )
+                
+                # Update layout
+                fig.update_layout(
+                    title="Performance Evolution",
+                    xaxis_title="Date",
+                    yaxis_title="Time",
+                    showlegend=False,
+                    plot_bgcolor='white'
+                )
+                
+                # Update axes
+                fig.update_xaxes(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='LightGray'
+                )
+                
+                # Custom y-axis formatting to show minutes:seconds
+                fig.update_yaxes(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='LightGray',
+                    zeroline=True,
+                    zerolinewidth=1,
+                    zerolinecolor='LightGray',
+                    tickformat="%M:%S",  # Format as minutes:seconds
+                    tickmode='auto'
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("No s'ha trobat cap segment destacat. Segueix les instruccions per fer-ho.")
 
         st.divider()
         st.markdown("""
