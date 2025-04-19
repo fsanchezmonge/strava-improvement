@@ -388,6 +388,140 @@ def get_starred_segments(access_token):
     
     return starred_segments
 
+def analyze_volume_progression(weekly_distance):
+    """
+    Analyze weekly volume progression to check if it follows good practices:
+    - Weekly changes between 8-12% (ideal progression range)
+    - Recovery weeks every 3-4 weeks
+    """
+    # Calculate percentage changes
+    pct_changes = weekly_distance['Distance'].pct_change() * 100
+    
+    # Check if changes are within the ideal range (8-12%) or too large
+    ideal_changes = (abs(pct_changes) >= 8) & (abs(pct_changes) <= 12)
+    too_large_changes = abs(pct_changes) > 12
+    
+    # Calculate percentage of weeks with ideal and too large changes
+    pct_ideal_changes = (ideal_changes.sum() / len(pct_changes)) * 100
+    pct_too_large = (too_large_changes.sum() / len(pct_changes)) * 100
+    
+    # Look for recovery weeks (weeks with volume decrease > 20%)
+    recovery_weeks = pct_changes < -20
+    recovery_freq = len(weekly_distance) / (recovery_weeks.sum() if recovery_weeks.sum() > 0 else 1)
+    
+    return {
+        'pct_ideal_changes': pct_ideal_changes,
+        'pct_too_large': pct_too_large,
+        'recovery_freq': recovery_freq,
+        'has_recovery': recovery_weeks.sum() > 0
+    }
+
+def analyze_frequency_consistency(weekly_sessions):
+    """
+    Analyze training frequency consistency
+    """
+    # Calculate coefficient of variation (CV) to measure consistency
+    cv = weekly_sessions['Sessions'].std() / weekly_sessions['Sessions'].mean() * 100
+    
+    # Calculate the most common number of sessions
+    mode_sessions = weekly_sessions['Sessions'].mode()[0]
+    
+    # Calculate percentage of weeks that match the mode
+    pct_consistent = (weekly_sessions['Sessions'] == mode_sessions).mean() * 100
+    
+    return {
+        'cv': cv,
+        'mode_sessions': mode_sessions,
+        'pct_consistent': pct_consistent
+    }
+
+def analyze_intensity_distribution(df_intensity):
+    """
+    Analyze training intensity distribution
+    """
+    total_sessions = len(df_intensity)
+    easy_sessions = len(df_intensity[df_intensity['intensity_zone_pace'] == 'Baixa'])
+    easy_percentage = (easy_sessions / total_sessions) * 100
+    
+    # Calculate deviation from 80/20 rule
+    deviation_from_ideal = abs(easy_percentage - 80)
+    
+    return {
+        'easy_percentage': easy_percentage,
+        'deviation': deviation_from_ideal
+    }
+
+# Add this just before the References section
+def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
+    """
+    Display a summary of training analysis with recommendations
+    """
+    st.markdown("### **Resum del període**")
+    
+    # Analyze each component
+    volume_analysis = analyze_volume_progression(weekly_distance)
+    frequency_analysis = analyze_frequency_consistency(weekly_sessions)
+    intensity_analysis = analyze_intensity_distribution(df_intensity)
+    
+    # Create three columns for the success/warning boxes
+    col1, col2, col3 = st.columns(3)
+    
+    # Lists to collect all messages
+    messages = []
+    
+    with col1:
+        with st.container(border=True, height=300):
+            st.markdown("#### Volum")
+            if volume_analysis['pct_ideal_changes'] > 50:
+                st.warning("⚠️ Els canvis setmanals són massa grans")
+                messages.append("- Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió.")
+            else:
+                st.success("✅ Progressió gradual del volum")
+                messages.append("- La progressió setmanal de volumn és adequada, al voltant del 10%.")
+                
+            if not volume_analysis['has_recovery']:
+                st.warning("⚠️ No es detecten setmanes de recuperació")
+                messages.append("- Considera incloure setmanes amb menys volum cada 3-4 setmanes.")
+            elif volume_analysis['recovery_freq'] > 5:
+                st.warning("⚠️ Falta de setmanes de recuperació")
+                messages.append("- Considera fer setmanes de menor volum més sovint.")
+            else:
+                st.success("✅ Bona distribució de setmanes de recuperació")
+            
+    with col2:
+        with st.container(border=True, height=300):
+            st.markdown("#### Freqüència")
+            if frequency_analysis['cv'] < 25:
+                st.success("✅ Freqüència consistent")
+                messages.append(f"- Mantens una freqüència constant al voltant de {frequency_analysis['mode_sessions']} sessions/setmana.")
+            else:
+                st.warning("⚠️ Freqüència irregular")
+                messages.append("- Intenta mantenir una freqüència més constant d'entrenaments.")
+                
+            if frequency_analysis['pct_consistent'] > 70:
+                st.success("✅ Rutina establerta")
+            else:
+                st.warning("⚠️ Rutina variable")
+                messages.append("- Establir una rutina més regular pot ajudar a mantenir la consistència.")
+                
+    with col3:
+        with st.container(border=True, height=300):
+            st.markdown("#### Intensitat")
+            if abs(intensity_analysis['deviation']) <= 10:
+                st.success("✅ Bona distribució d'intensitat")
+                messages.append("- La teva distribució d'intensitat s'apropa al 80 (baixa) / 20 (mitja-alta) recomanat.")
+            else:
+                if intensity_analysis['easy_percentage'] < 70:
+                    st.warning("⚠️ Massa sessions intenses")
+                    messages.append("- Considera fer més sessions a baixa intensitat.")
+                else:
+                    st.warning("⚠️ Distribució d'intensitat desequilibrada")
+                    messages.append("- Intenta ajustar la distribució d'intensitats al 80 (baixa) / 20 (mitja-alta).")
+
+    # Display all messages together below the columns
+    st.markdown("#### Recomanacions:")
+    st.markdown("\n".join(messages))
+
 def get_segments_data(activities, get_activity_details, get_segment_details, access_token):
     """
     Extract segment data from activities and return as a DataFrame.
@@ -1286,7 +1420,11 @@ def main():
         st.plotly_chart(fig_intensity, use_container_width=True)
 
         st.divider()
+
+        display_training_summary(weekly_distance, weekly_sessions, df_intensity)
         
+        st.divider()
+
         st.markdown("""
         ### Referències
         - [Training for a (half-)marathon: Training volume and longest endurance run related to performance and running injuries](https://pubmed.ncbi.nlm.nih.gov/32421886/)
