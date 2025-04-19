@@ -659,36 +659,33 @@ def main():
             """
             2. Selecciona el període que vols analitzar i el tipus d'activitat (opcional):
             """
-            # Add date filter
-            col1, col2 = st.columns(2)
-            with col1:
-                selected_dates = st.date_input(
-                    "",
-                    value=(pd.to_datetime('now').date() - pd.DateOffset(days=60),pd.to_datetime('now').date()),
-                    min_value=pd.to_datetime(df['datetime_local'].min()).date(),
-                    max_value=pd.to_datetime('now').date(),
-                    label_visibility="collapsed"
-                )
-            # Check if dates are selected
-            if len(selected_dates) != 2:
-                st.warning("Selecciona un rang de dates per continuar.")
+            # Add a form to wrap the date input
+            with st.form("date_selection_form", border=False):
+                col1, col2 = st.columns(2)
+                with col1:
+                    selected_dates = st.date_input(
+                        "",
+                        value=(pd.to_datetime('now').date() - pd.DateOffset(days=60), pd.to_datetime('now').date()),
+                        min_value=pd.to_datetime(df['datetime_local'].min()).date(),
+                        max_value=pd.to_datetime('now').date(),
+                        label_visibility="collapsed"
+                    )
+                with col2:
+                    # Get unique running activity types
+                    running_types = df[df['sport'] == 'Run']['type'].unique().tolist()
+                    running_types.insert(0, "Totes")  # Add "All" option at the beginning
+                    
+                    selected_type = st.selectbox(
+                        "Selecciona el tipus de cursa:",
+                        options=running_types,
+                        label_visibility="collapsed",
+                        key="selected_type"
+                    )
+                submit_dates = st.form_submit_button("Guardar")
+
+            # Only proceed with filtering if dates are submitted
+            if not submit_dates:
                 st.stop()
-            # Show warning if the date range is less than 28 days
-            date_diff = (selected_dates[1] - selected_dates[0]).days
-            if date_diff < 28:
-                st.warning("Et recomanem seleccionar un període mínim de 4 setmanes (o 28 dies) per veure tendències i canvis significatius.")
-                st.stop()
-  
-            with col2:
-                # Get unique running activity types
-                running_types = df[df['sport'] == 'Run']['type'].unique().tolist()
-                running_types.insert(0, "Totes")  # Add "All" option at the beginning
-                
-                selected_type = st.selectbox(
-                    "Selecciona el tipus de cursa:",
-                    options=running_types,
-                    label_visibility="collapsed"
-                )
 
         # Convert datetime_local to datetime for filtering
         df['datetime_local'] = pd.to_datetime(df['datetime_local'])
