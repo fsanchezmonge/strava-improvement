@@ -552,7 +552,7 @@ def main():
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """    
     Benvingut! He creat aquesta aplicació perquè puguis conèixer dades bàsiques sobre el teu entrenament que t'ajudaran a entendre millor com entrenes i respondre a les següents preguntes:
-    - Quantes hores he entrenat de mitjana?
+    - Quantes hores he entrenat de mitjana per setmana?
     - Estic fent les sortides llargues massa llargues?
     - Estic corrent més ràpid del que hauria?
 
