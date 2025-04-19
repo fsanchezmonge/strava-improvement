@@ -11,6 +11,8 @@ from scipy import stats
 import time
 from plotly.subplots import make_subplots
 import pathlib
+import uuid
+from typing import Optional
 
 st.set_page_config(
     page_title="Analitza el teu entrenament",
@@ -478,18 +480,18 @@ def get_segments_data(activities, get_activity_details, get_segment_details, acc
     return df_segments
 
 # After the supabase client initialization, add this function:
-def log_user_session(athlete_id: int, event_type: str, event_data: dict = None):
+def log_user_session(athlete_id: Optional[int], event_type: str, event_data: Optional[dict] = None):
     """
     Log user session data to Supabase.
     
     Parameters:
-    - athlete_id: Strava athlete ID
-    - event_type: Type of event (e.g., 'session_start', 'data_load', 'analysis')
+    - athlete_id: Strava athlete ID (0 for unauthenticated users)
+    - event_type: Type of event (e.g., 'app_open', 'auth_start', 'data_load', etc.)
     - event_data: Optional dictionary with additional event data
     """
     try:
         log_entry = {
-            'athlete_id': athlete_id,
+            'athlete_id': athlete_id if athlete_id is not None else 0,  # Use 0 for unauthenticated users
             'event_type': event_type,
             'event_data': event_data,
             'timestamp': datetime.now(timezone.utc).isoformat()
@@ -500,6 +502,13 @@ def log_user_session(athlete_id: int, event_type: str, event_data: dict = None):
         st.error(f"Error logging event: {str(e)}")
 
 def main():
+    # Log app open at the start of main with athlete_id=0 if not authenticated
+    log_user_session(
+        athlete_id=st.session_state.get('athlete_id', 0),  # Default to 0 if not authenticated
+        event_type='app_open',
+        event_data={'session_id': st.session_state.get('session_id')}
+    )
+
     with st.sidebar:
         """
         Em pots contactar per mail o Strava amb qualsevol dubte o suggerència que tinguis.
@@ -568,6 +577,13 @@ def main():
         
         if 'code' in query_params:
             code = query_params.get("code", [])
+            # Log authorization start
+            log_user_session(
+                athlete_id=0,  # Use 0 instead of None for unauthenticated users
+                event_type='auth_start',
+                event_data={'auth_code_present': True}
+            )
+            
             with st.spinner('Connectant amb Strava...'):
                 try:
                     token_response = get_token(code)
@@ -575,11 +591,29 @@ def main():
                         st.session_state.access_token = token_response['access_token']
                         st.session_state.athlete_id = token_response['athlete']['id']
                         save_token_to_supabase(token_response)
+                        # Log successful authorization
+                        log_user_session(
+                            athlete_id=token_response['athlete']['id'],
+                            event_type='auth_success',
+                            event_data={'athlete_id': token_response['athlete']['id']}
+                        )
                         st.query_params.clear()
                         st.rerun()
                     else:
+                        # Log failed authorization
+                        log_user_session(
+                            athlete_id=None,
+                            event_type='auth_failed',
+                            event_data={'error': token_response.get('error', 'Unknown error')}
+                        )
                         st.error(f"Error en la connexió: {token_response.get('error', 'Error desconegut')}")
                 except Exception as e:
+                    # Log authorization error
+                    log_user_session(
+                        athlete_id=None,
+                        event_type='auth_error',
+                        event_data={'error': str(e)}
+                    )
                     st.error(f"Error durant la connexió: {str(e)}")
         
         # Try to get stored token if we don't have one in session
@@ -1274,5 +1308,21 @@ def main():
                 'activities_analyzed': len(df_filtered)
             }
         )
+
+    # Add session state check for app exit
+    if 'was_running' not in st.session_state:
+        st.session_state.was_running = True
+    elif st.session_state.was_running:
+        # This will run when the script is about to stop
+        log_user_session(
+            athlete_id=st.session_state.get('athlete_id'),
+            event_type='app_exit',
+            event_data={'session_id': st.session_state.get('session_id')}
+        )
+        st.session_state.was_running = False
+
 if __name__ == "__main__":
+    # Generate a unique session ID when the app starts
+    if 'session_id' not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
     main()
