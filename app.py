@@ -823,56 +823,69 @@ def main():
         # Save to Supabase
         #save_activities_to_supabase(activities, st.session_state.athlete_id)
     if df is not None:
+        # Add these session state initializations
+        if 'date_range' not in st.session_state:
+            st.session_state.date_range = (
+                pd.to_datetime('now').date() - pd.DateOffset(days=60),
+                pd.to_datetime('now').date()
+            )
+        if 'selected_activity_type' not in st.session_state:
+            st.session_state.selected_activity_type = "Totes"
+
         with st.container(border=True):
             """
             2. Selecciona el període que vols analitzar i el tipus d'activitat (opcional):
             """
-            # Add a form to wrap the date input
+            # Modify the form to update session state
             with st.form("date_selection_form", border=False):
                 col1, col2 = st.columns(2)
                 with col1:
                     selected_dates = st.date_input(
                         "",
-                        value=(pd.to_datetime('now').date() - pd.DateOffset(days=60), pd.to_datetime('now').date()),
+                        value=st.session_state.date_range,
                         min_value=pd.to_datetime(df['datetime_local'].min()).date(),
                         max_value=pd.to_datetime('now').date(),
                         label_visibility="collapsed"
                     )
                 with col2:
-                    # Get unique running activity types
                     running_types = df[df['sport'] == 'Run']['type'].unique().tolist()
-                    running_types.insert(0, "Totes")  # Add "All" option at the beginning
+                    running_types.insert(0, "Totes")
                     
                     selected_type = st.selectbox(
                         "Selecciona el tipus de cursa:",
                         options=running_types,
                         label_visibility="collapsed",
-                        key="selected_type"
+                        key="activity_type_select",
+                        index=running_types.index(st.session_state.selected_activity_type)
                     )
                 submit_dates = st.form_submit_button("Guardar")
+                
+                if submit_dates:
+                    st.session_state.date_range = selected_dates
+                    st.session_state.selected_activity_type = selected_type
 
-            # Only proceed with filtering if dates are submitted
-            if not submit_dates:
+            # Check for valid session state instead of form submission
+            if 'date_range' not in st.session_state:
                 st.stop()
 
-        # Convert datetime_local to datetime for filtering
-        df['datetime_local'] = pd.to_datetime(df['datetime_local'])
-        
-        # Filter DataFrame based on selected dates and Sport = Run, optionally by specific run type
-        if selected_type == "Totes":
-            mask = (
-                (df['datetime_local'].dt.date >= selected_dates[0]) & 
-                (df['datetime_local'].dt.date <= selected_dates[1]) & 
-                (df['sport'] == 'Run')
-            )
-        else:
-            mask = (
-                (df['datetime_local'].dt.date >= selected_dates[0]) & 
-                (df['datetime_local'].dt.date <= selected_dates[1]) & 
-                (df['sport'] == 'Run') &
-                (df['type'] == selected_type)
-            )
-        df_filtered = df[mask]
+            # Use session state values for filtering
+            df['datetime_local'] = pd.to_datetime(df['datetime_local'])
+            
+            if st.session_state.selected_activity_type == "Totes":
+                mask = (
+                    (df['datetime_local'].dt.date >= st.session_state.date_range[0]) & 
+                    (df['datetime_local'].dt.date <= st.session_state.date_range[1]) & 
+                    (df['sport'] == 'Run')
+                )
+            else:
+                mask = (
+                    (df['datetime_local'].dt.date >= st.session_state.date_range[0]) & 
+                    (df['datetime_local'].dt.date <= st.session_state.date_range[1]) & 
+                    (df['sport'] == 'Run') &
+                    (df['type'] == st.session_state.selected_activity_type)
+                )
+            df_filtered = df[mask]
+
         st.divider()     
         """
         ### **Volum**
