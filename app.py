@@ -1297,7 +1297,7 @@ def main():
             )
             
             # Rename columns
-            races_display.columns = ['Nom', 'Tipus', 'Data', 'Distància (km)', 'Temps (h:min)', 'Ritme (min/km)']
+            races_display.columns = ['Nom', 'Tipus', 'Data', 'Distància (km)', 'Temps (hh:min)', 'Ritme (min/km)']
             
             st.write("Aquesta és la cursa amb ritme més alt detectada:")
             st.dataframe(
