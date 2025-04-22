@@ -873,14 +873,14 @@ def main():
             
             if st.session_state.selected_activity_type == "Totes":
                 mask = (
-                    (df['datetime_local'].dt.date >= st.session_state.date_range[0]) & 
-                    (df['datetime_local'].dt.date <= st.session_state.date_range[1]) & 
+                    (df['datetime_local'].dt.date >= pd.to_datetime(st.session_state.date_range[0]).date()) & 
+                    (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date()) & 
                     (df['sport'] == 'Run')
                 )
             else:
                 mask = (
-                    (df['datetime_local'].dt.date >= st.session_state.date_range[0]) & 
-                    (df['datetime_local'].dt.date <= st.session_state.date_range[1]) & 
+                    (df['datetime_local'].dt.date >= pd.to_datetime(st.session_state.date_range[0]).date()) & 
+                    (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date()) & 
                     (df['sport'] == 'Run') &
                     (df['type'] == st.session_state.selected_activity_type)
                 )
