@@ -473,8 +473,8 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
         with st.container(border=True, height=300):
             st.markdown("#### Volum")
             if volume_analysis['pct_ideal_changes'] > 50:
-                st.warning("⚠️ La variació setmanal és molt elevada.")
-                messages.append("- Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió i ajudar al cos a adaptar-se.")
+                st.warning("⚠️ Els canvis setmanals són massa grans")
+                messages.append("- Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió.")
             else:
                 st.success("✅ Progressió gradual del volum")
                 messages.append("- La progressió setmanal de volumn és adequada, al voltant del 10%.")
@@ -484,7 +484,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
                 messages.append("- Considera incloure setmanes amb menys volum cada 3-4 setmanes.")
             elif volume_analysis['recovery_freq'] > 5:
                 st.warning("⚠️ Falta de setmanes de recuperació")
-                messages.append("- Considera incloure alguna setmana de recuperació cada 3-4 setmanes o quan sentis que la necessites.")
+                messages.append("- Considera fer setmanes de menor volum més sovint.")
             else:
                 st.success("✅ Bona distribució de setmanes de recuperació")
             
@@ -496,7 +496,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
                 messages.append(f"- Mantens una freqüència constant al voltant de {frequency_analysis['mode_sessions']} sessions/setmana.")
             else:
                 st.warning("⚠️ Freqüència irregular")
-                messages.append("- El nombre de sessions per setmana varia significativament, intenta trobar una rutina que puguis mantenir al llarg del temps.")
+                messages.append("- Intenta mantenir una freqüència més constant d'entrenaments.")
                 
             if frequency_analysis['pct_consistent'] > 70:
                 st.success("✅ Rutina establerta")
@@ -513,7 +513,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
             else:
                 if intensity_analysis['easy_percentage'] < 70:
                     st.warning("⚠️ Massa sessions intenses")
-                    messages.append("- Considera fer més sessions a baixa intensitat. D'aquesta forma podràs incrementar el volum i et sentiràs menys fatigat.")
+                    messages.append("- Considera fer més sessions a baixa intensitat.")
                 else:
                     st.warning("⚠️ Distribució d'intensitat desequilibrada")
                     messages.append("- Intenta ajustar la distribució d'intensitats al 80 (baixa) / 20 (mitja-alta).")
@@ -692,7 +692,7 @@ def main():
 
     Conèixer la resposta et pot ajudar a planificar millor properes preparacions i reduïr risc de lesions, però recorda que les dades també tenen limitacions i això és una simplificació on no s'estan tenint en compte factors com l'estrès personal, historial esportiu, etc.
 
-    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són els tres pilars bàsics que podem modificar estimular adaptacions i millorar la forma física.
+    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són els tres pilars bàsics que podem modificar per millorar.
     """
     df = None
     with st.container(border=True):
