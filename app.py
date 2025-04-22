@@ -889,7 +889,7 @@ def main():
         st.divider()     
         """
         ### **Volum**
-        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma. Una bona norma general és estar al voltant del **10% de variació setmanal**.
+        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma. Una norma general és estar al voltant del **10% de variació setmanal**.
 
         Si entrenes per muntanya, pot ser més útil fer servir temps i no distància per tenir en compte la desigualtat del terreny i el desnivell.
         """
