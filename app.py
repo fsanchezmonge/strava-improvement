@@ -685,14 +685,14 @@ def main():
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """    
-    Benvingut! He creat aquesta aplicació perquè puguis conèixer dades bàsiques sobre el teu entrenament que t'ajudaran a entendre millor com entrenes i respondre a les següents preguntes:
-    - Quantes hores he entrenat de mitjana per setmana?
-    - Estic fent les sortides llargues massa llargues?
-    - Estic corrent més ràpid del que hauria?
+    Benvingut! Aquesta aplicació et pot ajudar a revisar com has entrenat durant la preparació per alguna cursa i aprendre algun concepte bàsic per millorar en el futur.
 
-    Conèixer la resposta et pot ajudar a planificar millor properes preparacions i reduïr risc de lesions, però recorda que les dades també tenen limitacions i això és una simplificació on no s'estan tenint en compte factors com l'estrès personal, historial esportiu, etc.
+    Algunes recomanacions per fer servir l'aplicació:
+    - Selecciona un període d'entre 4 setmanes i 2-3 mesos per poder captar canvis i tendències significatives, on l'últim dia seleccionatés el de la cursa que vols analitzar.
+    - Per ara, l'aplicació només té en compte les activitats de running i trail.
+    - Hi ha certs factors com l'estrès personal, historial esportiu, etc que no es poden tenir en compte amb les dades disponibles però que afecten a l'entrenament i el rendiment.
 
-    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són els tres pilars bàsics que podem modificar per millorar.
+    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són tres pilars bàsics que podem modificar per millorar.
     """
     df = None
     with st.container(border=True):
@@ -889,9 +889,9 @@ def main():
         st.divider()     
         """
         ### **Volum**
-        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon indicador de que estàs millorant el nivell de forma. Una norma general és estar al voltant del **10% de variació setmanal**.
+        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon signe de millora del nivell de forma. Una norma general és estar al voltant del **10% de variació setmanal**.
 
-        Si entrenes per muntanya, pot ser més útil fer servir temps i no distància per tenir en compte la desigualtat del terreny i el desnivell.
+        Si entrenes per muntanya, pot ser important combinar distància amb temps per tenir en compte la desigualtat del terreny i el desnivell.
         """
         # Create tabs for distance and time charts
         tab1, tab2 = st.tabs(["📏 Distància", "⏱️ Temps"])
@@ -1058,13 +1058,11 @@ def main():
         """        
         ##### Sortides llargues
 
-        Un entrenament amb molts beneficis per proves de resistència és una sortida llarga.
-
-        Com de llarg dependrà del teu nivell i objectiu, però el més important és **començar amb una distància que et permeti progressar setmana a setmana** sense impactar excessivament en la resta de sessions. 
+        Com de llarga ha de ser la teva sortida llarga dependrà del teu nivell i objectiu, però el més important és **començar amb una distància que et permeti progressar setmana a setmana** sense impactar excessivament en la resta de sessions. 
         
-        Una norma general és mantenir la distància d'aquesta sortida entre el 30% i el 40% del total setmanal.
+        Una forma de comprovar això és mantenir la distància d'aquesta sortida entre el 30% i el 40% del total setmanal (ho pots veure al gràfic de sota).
 
-        Si ets capaç d'incrementar la distància setmana a setmana i aconsegueixes mantenir ritmes semblants, és probable que estiguis millorant.
+        Incrementar la distància setmana a setmana amb ritmes semblants és un bon indicador de que estàs millorant.
         """
         
         # Get longest activity per week and weekly totals
@@ -1122,7 +1120,7 @@ def main():
 
         # Display the styled dataframe using Styler
         # This replaces the previous st.dataframe call and the code dropping 'numeric_percentage'
-        st.write("**Sessió més llarga per setmana**")
+        st.write("**Sessió més llarga per setmana i % del total de distància setmanal**")
         st.dataframe(
             longest_runs_display.style.apply(
                 lambda col: col.map(style_percentage_background), # Apply style based on numeric value
