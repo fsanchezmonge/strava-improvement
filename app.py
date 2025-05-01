@@ -319,7 +319,7 @@ def add_intensity_index(df: pd.DataFrame, reference_pace: float, race_distance: 
     
     st.markdown(
     f"""
-    ###### El ritme llindar estimat és {adjusted_reference_pace_str}
+    ###### El ritme llindar estimat és {adjusted_reference_pace_str}.
     """
     )
 
