@@ -319,7 +319,7 @@ def add_intensity_index(df: pd.DataFrame, reference_pace: float, race_distance: 
     
     st.markdown(
     f"""
-    ###### El ritme màxim estimat que pots mantenir durant una hora és {adjusted_reference_pace_str}
+    ###### El ritme llindar estimat és {adjusted_reference_pace_str}
     """
     )
 
@@ -399,9 +399,9 @@ def analyze_volume_progression(weekly_distance):
     pct_changes = weekly_distance['Distance'].pct_change() * 100
     
     # Check if changes are within the ideal range (8-12%) or too large
-    ideal_changes = (abs(pct_changes) >= 8) & (abs(pct_changes) <= 12)
-    too_large_changes = abs(pct_changes) > 12
-    
+    ideal_changes = (abs(pct_changes) >= 6) & (abs(pct_changes) <= 15)
+    too_large_changes = abs(pct_changes) > 15
+
     # Calculate percentage of weeks with ideal and too large changes
     pct_ideal_changes = (ideal_changes.sum() / len(pct_changes)) * 100
     pct_too_large = (too_large_changes.sum() / len(pct_changes)) * 100
@@ -409,7 +409,7 @@ def analyze_volume_progression(weekly_distance):
     # Look for recovery weeks (weeks with volume decrease > 20%)
     recovery_weeks = pct_changes < -20
     recovery_freq = len(weekly_distance) / (recovery_weeks.sum() if recovery_weeks.sum() > 0 else 1)
-    
+
     return {
         'pct_ideal_changes': pct_ideal_changes,
         'pct_too_large': pct_too_large,
@@ -473,8 +473,8 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
     with col1:
         with st.container(border=True, height=300):
             st.markdown("#### Volum")
-            if volume_analysis['pct_ideal_changes'] > 50:
-                st.warning("⚠️ Els canvis setmanals són massa grans")
+            if volume_analysis['pct_too_large'] > 50:
+                st.warning("⚠️ Canvis setmanals massa grans")
                 messages.append("- Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió.")
             else:
                 st.success("✅ Progressió gradual del volum")
@@ -482,12 +482,15 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
                 
             if not volume_analysis['has_recovery']:
                 st.warning("⚠️ No es detecten setmanes de recuperació")
-                messages.append("- Considera incloure setmanes amb menys volum cada 3-4 setmanes.")
+                messages.append("- Considera incloure setmanes de recuperació (reduïr entre 20%-30% el volum) cada 3-4 setmanes.")
+            elif volume_analysis['recovery_freq'] < 2:
+                st.warning("⚠️ Falta de consistència del volum")
+                messages.append("- El volum no incrementa gradualment, intenta mantenir un volum factible i pujar-lo gradualment.")
             elif volume_analysis['recovery_freq'] > 5:
                 st.warning("⚠️ Falta de setmanes de recuperació")
-                messages.append("- Considera fer setmanes de menor volum més sovint.")
+                messages.append("- Considera fer setmanes de recuperació més sovint.")
             else:
-                st.success("✅ Bona distribució de setmanes de recuperació")
+                st.success("✅ Bona distribució de setmanes de recuperació") 
             
     with col2:
         with st.container(border=True, height=300):
@@ -498,13 +501,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
             else:
                 st.warning("⚠️ Freqüència irregular")
                 messages.append("- Intenta mantenir una freqüència més constant d'entrenaments.")
-                
-            if frequency_analysis['pct_consistent'] > 70:
-                st.success("✅ Rutina establerta")
-            else:
-                st.warning("⚠️ Rutina variable")
-                messages.append("- Establir una rutina més regular pot ajudar a mantenir la consistència.")
-                
+                  
     with col3:
         with st.container(border=True, height=300):
             st.markdown("#### Intensitat")
@@ -686,12 +683,12 @@ def main():
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """    
-    Benvingut! Aquesta aplicació et pot ajudar a revisar com has entrenat durant la preparació per alguna cursa i aprendre algun concepte bàsic per millorar en el futur.
+    Benvingut! Aquesta aplicació et pot ajudar a revisar com has entrenat per preparar una cursa i aprendre alguns conceptes bàsics per millorar en el futur.
 
-    Algunes recomanacions per fer servir l'aplicació:
+    Algunes consideracions per fer servir-la:
     - Selecciona un període d'entre 4 setmanes i 2-3 mesos per poder captar canvis i tendències significatives, on l'últim dia seleccionatés el de la cursa que vols analitzar.
-    - Per ara, l'aplicació només té en compte les activitats de running i trail.
-    - Hi ha certs factors com l'estrès personal, historial esportiu, etc que no es poden tenir en compte amb les dades disponibles però que afecten a l'entrenament i el rendiment.
+    - Per ara, només es tenen en compte les activitats de running i trail.
+    - Hi ha certs factors com l'estrès personal, historial esportiu, i sensacions subjectives que no es poden tenir en compte amb les dades disponibles però que afecten a l'entrenament i el rendiment.
 
     L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són tres pilars bàsics que podem modificar per millorar.
     """
@@ -1262,7 +1259,7 @@ def main():
         """      
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
             st.write("""
-            Quan vagis a pujar la teva activitat, selecciona el primer desplegable sota '^^Detalls' i selecciona 'Prueba' (per defecte està marcat com 'Entrenamiento').
+            Quan vagis a pujar la teva activitat (o l'editis), selecciona el primer desplegable sota 'Detalls' i canvia el tipus a 'Prueba' (per defecte està marcat com 'Entrenamiento').
             """)
             col1img, col2img = st.columns(2)
             with col1img:
@@ -1351,7 +1348,9 @@ def main():
             race_pace = race_pace_manual
 
         """
-        Amb aquest ritme, estimarem el que seria el ritme màxim que podries mantenir durant 1 hora, i a partir d'aquí classificarem cada entrenament en baixa, mitja o alta intensitat.
+        A partir d'aquest ritme ajustat a la distància, calcularem un llindar que farem servir per classificar cada entrenament en baixa, mitjana o alta intensitat en funció del ritme de cada un d'ells.
+        
+        Aquest llindar, hauria de ser l'equivalent al ritme màxim mig que podries mantenir durant 1 hora.
         """          
                 # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
