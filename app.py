@@ -783,7 +783,7 @@ def main():
                 }}
                 </style>
                 <div class="strava-button">
-                    <a href="{AUTH_URL}" target="_blank">
+                    <a href="{AUTH_URL}">
                         <img src="{svg_uri}" width="193" height="48" alt="Connect with Strava"/>
                     </a>
                 </div>
