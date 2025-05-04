@@ -1344,7 +1344,7 @@ def main():
         """        
         A partir d'aquest, estimarem el ritme màxim que podries mantenir durant 1 hora, que és un indicador de resistència i té rellevància fisiològica, i el farem servir per classificar cada entrenament en baixa, mitjana o alta intensitat en funció del ritme mitjà.
         """
-        st.warning("La classificació es calcula en funció del ritme mitjà de cada entrenament, per tant, hi ha casos on potser l'entrenament haurà estat més intens del que indica el resultat (p.ex: intervals curts).")          
+        st.warning("La classificació es calcula en funció del ritme mitjà de cada entrenament, per tant, hi ha casos on potser l'entrenament pot ser més intens del que indica el resultat (p.ex: intervals curts).")          
                 # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
         df_intensity = add_intensity_index(df_filtered, race_pace, race_distance)
