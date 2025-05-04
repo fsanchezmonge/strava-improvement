@@ -683,14 +683,11 @@ def main():
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     """    
-    Benvingut! Aquesta aplicació et pot ajudar a revisar com has entrenat per preparar una cursa i aprendre alguns conceptes bàsics per millorar en el futur.
-
-    Algunes consideracions per fer servir-la:
-    - Selecciona un període d'entre 4 setmanes i 2-3 mesos per poder captar canvis i tendències significatives, on l'últim dia seleccionatés el de la cursa que vols analitzar.
-    - Per ara, només es tenen en compte les activitats de running i trail.
-    - Hi ha certs factors com l'estrès personal, historial esportiu, i sensacions subjectives que no es poden tenir en compte amb les dades disponibles però que afecten a l'entrenament i el rendiment.
-
+    Benvingut! L'objectiu d'aquesta aplicació és ajudar-te a revisar com has preparat una cursa i comprovar si has complert alguns principis bàsics de l'entrenament de resistència perquè puguis millorar a futures preparacions. 
+    
     L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són tres pilars bàsics que podem modificar per millorar.
+
+    Recorda que hi ha factors com l'estrès personal, historial esportiu i sensacions subjectives que no es poden tenir en compte amb les dades disponibles però que afecten a l'entrenament i el rendiment.
     """
     df = None
     with st.container(border=True):
@@ -831,6 +828,7 @@ def main():
             """
             2. Selecciona el període que vols analitzar i el tipus d'activitat (opcional):
             """
+            st.info("Selecciona un període d'entre 4 setmanes i 2-3 mesos, on l'últim dia sigui el de la cursa per detectar canvis i tendències significatives.")
             # Modify the form to update session state
             with st.form("date_selection_form", border=False):
                 col1, col2 = st.columns(2)
@@ -843,15 +841,13 @@ def main():
                         label_visibility="collapsed"
                     )
                 with col2:
-                    running_types = df[df['sport'] == 'Run']['type'].unique().tolist()
-                    running_types.insert(0, "Totes")
-                    
-                    selected_type = st.selectbox(
+                    running_types = df['type'].unique().tolist()
+                    selected_type = st.multiselect(
                         "Selecciona el tipus de cursa:",
                         options=running_types,
                         label_visibility="collapsed",
                         key="activity_type_select",
-                        index=running_types.index(st.session_state.selected_activity_type)
+                        placeholder="Totes les activitats"
                     )
                 submit_dates = st.form_submit_button("Guardar")
                 
@@ -866,18 +862,16 @@ def main():
             # Use session state values for filtering
             df['datetime_local'] = pd.to_datetime(df['datetime_local'])
             
-            if st.session_state.selected_activity_type == "Totes":
+            if not selected_type:  # If no types selected, show all
                 mask = (
                     (df['datetime_local'].dt.date >= pd.to_datetime(st.session_state.date_range[0]).date()) & 
-                    (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date()) & 
-                    (df['sport'] == 'Run')
+                    (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date())
                 )
-            else:
+            else:  # Filter for selected types
                 mask = (
                     (df['datetime_local'].dt.date >= pd.to_datetime(st.session_state.date_range[0]).date()) & 
-                    (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date()) & 
-                    (df['sport'] == 'Run') &
-                    (df['type'] == st.session_state.selected_activity_type)
+                    (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date()) &
+                    (df['type'].isin(selected_type))
                 )
             df_filtered = df[mask]
 
@@ -1255,7 +1249,7 @@ def main():
         """
         ### **Intensitat**
 
-        Per estimar la intensitat dels teus entrenaments, farem servir el ritme de la cursa amb el ritme més alt dintre del període seleccionat o el que introdueixis manualment.
+        Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment.
         """      
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
             st.write("""
@@ -1347,17 +1341,17 @@ def main():
             race_distance = race_distance_manual
             race_pace = race_pace_manual
 
+        """        
+        A partir d'aquest, estimarem el ritme màxim que podries mantenir durant 1 hora, que és un indicador de resistència i té rellevància fisiològica, i el farem servir per classificar cada entrenament en baixa, mitjana o alta intensitat en funció del ritme mitjà.
         """
-        A partir d'aquest ritme ajustat a la distància, calcularem un llindar que farem servir per classificar cada entrenament en baixa, mitjana o alta intensitat en funció del ritme de cada un d'ells.
-        
-        Aquest llindar, hauria de ser l'equivalent al ritme màxim mig que podries mantenir durant 1 hora.
-        """          
+        st.warning("La classificació es calcula en funció del ritme mitjà de cada entrenament, per tant, hi ha casos on potser l'entrenament haurà estat més intens del que indica el resultat (p.ex: intervals curts).")          
                 # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
         df_intensity = add_intensity_index(df_filtered, race_pace, race_distance)
+
         #st.dataframe(df_intensity[['datetime_local', 'average_pace', 'intensity_index', 'intensity_zone_pace', 'average_heartrate']])
         easy_percentage = compute_easy_percentage(df_intensity)
-        st.metric("% de sessions amb intensitat baixa", f"{easy_percentage:.1f}%",help="La distribució que funciona millor per a la majoria de corredors és **80% de dies de baixa intensitat** i **20% de dies de moderada o alta intensitat**.")
+        st.metric("% de sessions amb intensitat baixa", f"{easy_percentage:.0f}%",help="La distribució més recomanada per la majoria de corredors és **80% dels dies a baixa intensitat** i **20% dels dies a moderada o alta intensitat**.")
 
         # Group by week and intensity zone to get counts
         intensity_by_week = df_intensity.groupby([
@@ -1396,7 +1390,7 @@ def main():
 
         # Update layout
         fig_intensity.update_layout(
-            title='Distribució de la intensitat per setmana',
+            title='Distribució de la intensitat: sessions per setmana',
             xaxis_title='Setmana',
             yaxis_title='Nombre de sessions',
             barmode='stack',
