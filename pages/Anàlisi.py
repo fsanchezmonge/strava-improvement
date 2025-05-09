@@ -26,11 +26,10 @@ st.set_page_config(
 load_dotenv()
 
 # Initialize Supabase client
-# Try to get from streamlit secrets first (for cloud deployment)
 url: str = st.secrets.get("SUPABASE_URL")
 key: str = st.secrets.get("SUPABASE_KEY")
 
-current_dir = pathlib.Path(__file__).parent.resolve()
+current_dir = pathlib.Path(__file__).parent.parent.resolve()
 
 if not url or not key:
     st.error("Missing Supabase credentials. Please check your environment variables or secrets.")
@@ -50,9 +49,7 @@ if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
 if 'REDIRECT_URI' in st.secrets:
     REDIRECT_URI = st.secrets['REDIRECT_URI']
 else:
-    REDIRECT_URI = "http://localhost:8501"  # Local development fallback
-
-AUTH_URL = f"http://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=activity:read_all"
+    REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8501")  # Local development fallback
 
 def highlight_high_percentage(val):
     try:
@@ -682,138 +679,51 @@ def main():
         """
 
     st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
-    """    
-    Benvingut! L'objectiu d'aquesta aplicació és ajudar-te a revisar com has preparat una cursa i comprovar si has complert alguns principis bàsics de l'entrenament de resistència perquè puguis millorar a futures preparacions. 
-    
-    L'aplicació es divideix en tres seccions: **volum**, **freqüència** i **intensitat**, que són tres pilars bàsics que podem modificar per millorar.
-
-    Recorda que hi ha factors com l'estrès personal, historial esportiu i sensacions subjectives que no es poden tenir en compte amb les dades disponibles però que afecten a l'entrenament i el rendiment.
-    """
+    st.write("")
     df = None
-    with st.container(border=True):
-        """
-        1. Connecta el teu perfil d'Strava. Fes click al botó i autoritza l'accés a les dades del teu perfil.
+    # Initialize session state
+    if 'access_token' not in st.session_state:
+        st.session_state.access_token = None
+    if 'athlete_id' not in st.session_state:
+        st.session_state.athlete_id = None
 
-        """
-        # Initialize session state
-        if 'access_token' not in st.session_state:
-            st.session_state.access_token = None
-        if 'athlete_id' not in st.session_state:
-            st.session_state.athlete_id = None
-
-        # Check for authorization code in URL
-        query_params = st.query_params
-        
-        if 'code' in query_params:
-            code = query_params.get("code", [])
-            # Log authorization start
-            log_user_session(
-                athlete_id=0,  # Use 0 instead of None for unauthenticated users
-                event_type='auth_start',
-                event_data={'auth_code_present': True}
-            )
-            
-            with st.spinner('Connectant amb Strava...'):
-                try:
-                    token_response = get_token(code)
-                    if 'access_token' in token_response:
-                        st.session_state.access_token = token_response['access_token']
-                        st.session_state.athlete_id = token_response['athlete']['id']
-                        save_token_to_supabase(token_response)
-                        # Log successful authorization
-                        log_user_session(
-                            athlete_id=token_response['athlete']['id'],
-                            event_type='auth_success',
-                            event_data={'athlete_id': token_response['athlete']['id']}
-                        )
-                        st.query_params.clear()
-                        st.rerun()
-                    else:
-                        # Log failed authorization
-                        log_user_session(
-                            athlete_id=None,
-                            event_type='auth_failed',
-                            event_data={'error': token_response.get('error', 'Unknown error')}
-                        )
-                        st.error(f"Error en la connexió: {token_response.get('error', 'Error desconegut')}")
-                except Exception as e:
-                    # Log authorization error
-                    log_user_session(
-                        athlete_id=None,
-                        event_type='auth_error',
-                        event_data={'error': str(e)}
-                    )
-                    st.error(f"Error durant la connexió: {str(e)}")
-        
-        # Try to get stored token if we don't have one in session
-        if st.session_state.access_token is None and st.session_state.athlete_id is not None:
-            # Try to get a fresh token for this athlete
-            fresh_token = ensure_fresh_token()
-            if fresh_token:
-                st.session_state.access_token = fresh_token
-                st.rerun()
-
-        if st.session_state.access_token is None:
-            col7, col8, col9 = st.columns(3)
-            with col8:
-                # Path to your SVG file
-                svg_path = f"{current_dir}/assets/strava_button.svg"
-                # Read and encode the SVG as base64
-                with open(svg_path, "rb") as f:
-                    svg_data = f.read()
-                    b64_svg = base64.b64encode(svg_data).decode("utf-8")
-                # Create a data URI for the SVG
-                svg_uri = f"data:image/svg+xml;base64,{b64_svg}"
-                # Render the clickable button
-                st.markdown(f"""
-                <style>
-                .strava-button {{
-                    display: inline-block;
-                    cursor: pointer;
-                    transition: transform 0.2s;
-                }}
-                .strava-button:hover {{
-                    transform: scale(1.02);
-                }}
-                </style>
-                <div class="strava-button">
-                    <a href="{AUTH_URL}">
-                        <img src="{svg_uri}" width="193" height="48" alt="Connect with Strava"/>
-                    </a>
-                </div>
-                """, unsafe_allow_html=True)
-                st.write("")
-
+    # Try to get stored token if we don't have one in session
+    if st.session_state.access_token is None:
+        # Try to get a fresh token for this athlete
+        fresh_token = ensure_fresh_token()
+        if fresh_token:
+            st.session_state.access_token = fresh_token
+            st.rerun()
         else:
-            st.write("")
-            activities = get_activities(st.session_state.access_token)
-            if activities:
-                # Log successful data load
-                log_user_session(
-                    st.session_state.athlete_id,
-                    'data_load',
-                    {
-                        'activities_count': len(activities),
-                        'date_range': [
-                            min(a['datetime_local'] for a in activities),
-                            max(a['datetime_local'] for a in activities)
-                        ]
-                    }
-                )
-                
-                # Convert activities to DataFrame
-                df = pd.DataFrame(activities)
-                st.success("Activitats carregades!")
-            else:
-                # Log failed data load
-                log_user_session(
-                    st.session_state.athlete_id,
-                    'data_load_failed'
-                )
-                st.warning("No s'han trobat activitats.")
-    
-        # Save to Supabase
-        #save_activities_to_supabase(activities, st.session_state.athlete_id)
+            st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
+            st.markdown("[Connecta amb Strava](/landing)")
+            st.stop()
+
+    activities = get_activities(st.session_state.access_token)
+    if activities:
+        # Log successful data load
+        log_user_session(
+            st.session_state.athlete_id,
+            'data_load',
+            {
+                'activities_count': len(activities),
+                'date_range': [
+                    min(a['datetime_local'] for a in activities),
+                    max(a['datetime_local'] for a in activities)
+                ]
+            }
+        )
+        
+        # Convert activities to DataFrame
+        df = pd.DataFrame(activities)
+    else:
+        # Log failed data load
+        log_user_session(
+            st.session_state.athlete_id,
+            'data_load_failed'
+        )
+        st.warning("No s'han trobat activitats.")
+
     if df is not None:
         # Add these session state initializations
         if 'date_range' not in st.session_state:
@@ -825,10 +735,6 @@ def main():
             st.session_state.selected_activity_type = "Totes"
 
         with st.container(border=True):
-            """
-            2. Selecciona el període que vols analitzar i el tipus d'activitat (opcional):
-            """
-            st.info("Selecciona un període d'entre 4 setmanes i 2-3 mesos, on l'últim dia sigui el de la cursa per detectar canvis i tendències significatives.")
             # Modify the form to update session state
             with st.form("date_selection_form", border=False):
                 col1, col2 = st.columns(2)
@@ -875,7 +781,6 @@ def main():
                 )
             df_filtered = df[mask]
 
-        st.divider()     
         """
         ### **Volum**
         **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon signe de millora del nivell de forma. Una norma general és estar al voltant del **10% de variació setmanal**.
@@ -1425,18 +1330,6 @@ def main():
 
         display_training_summary(weekly_distance, weekly_sessions, df_intensity)
         
-        st.divider()
-
-        st.markdown("""
-        ### Referències
-        - [Training for a (half-)marathon: Training volume and longest endurance run related to performance and running injuries](https://pubmed.ncbi.nlm.nih.gov/32421886/)
-        - [Does Training Frequency Matter for Fitness Gains?](https://www.physiologicallyspeaking.com/p/physiology-friday-257-does-training?utm_source=post-email-title&publication_id=549308&post_id=157136370&utm_campaign=email-post-title&isFreemail=true&r=1kkul7&triedRedirect=true&utm_medium=email)
-        - [Estimating running performance](https://medium.com/@altini_marco/estimating-running-performance-890c303aa7ce)
-        - [Endurance Training - Science and Practice (2nd Edition)](https://www.inigomujika.com/libros/endurance-training-science-and-practice-2-edicion/)
-        - [Training for the Uphill Athlete](https://uphillathlete.com/product/training-for-the-uphill-athlete-book/)
-        - [The truth about long runs](https://youtu.be/Qcnlhzw0dQY?si=HatCwe94pM9Qb7Ld)
-        """)
-
     # After analysis is performed (e.g., after processing selected dates), add:
     if df is not None and len(selected_dates) == 2:
         log_user_session(
