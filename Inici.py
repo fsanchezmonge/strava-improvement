@@ -89,7 +89,45 @@ def log_user_session(athlete_id, event_type, event_data=None):
 
 def main():
     st.markdown("""
-    <style>
+        <style>
+        /* Override Streamlit's default container styles */
+        .stApp {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        .main .block-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        /* Remove all default padding and margins */
+        .stApp > header {
+            background-color: transparent;
+        }
+        .stApp > footer {
+            display: none;
+        }
+        section[data-testid="stSidebar"] {
+            display: none;
+        }
+        .stDeployButton {
+            display: none;
+        }
+        /* Ensure content takes full width */
+        .stMarkdown {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        /* Override any other potential width constraints */
+        div[data-testid="stVerticalBlock"] {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        div[data-testid="stHorizontalBlock"] {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        /* Your existing styles */
         h1 {
             font-family: 'Helvetica Neue', sans-serif;
             font-size: 40px;
@@ -103,7 +141,7 @@ def main():
             font-weight: normal;
             margin-top: 15px;
         }
-    </style>
+        </style>
     """, unsafe_allow_html=True)
     # Generate a unique session ID when the app starts
     if 'session_id' not in st.session_state:
@@ -164,75 +202,123 @@ def main():
                 st.error(f"Error durant la connexió: {str(e)}")
 
     # Display the Strava connect button and image
-    col1, col2, col3 = st.columns([1, 3, 1])
-    with col2:
-        st.markdown("""
-            <div style="text-align: center;">
-                <h1>Apren els bàsics, entrena millor</h1>
-                <h5>Analitza com et prepares per les teves curses i descobreix com pots millorar amb consells personalitzats</h5>
-            </div>
-        """, unsafe_allow_html=True)
+    #col1, col2, col3 = st.columns([1, 3, 1])
+    #with col2:
+    st.markdown("""
+        <div style="text-align: center;">
+            <h1>Apren els bàsics, entrena millor</h1>
+            <h5>Analitza com et prepares per les teves curses i descobreix com pots millorar amb consells personalitzats</h5>
+        </div>
+    """, unsafe_allow_html=True)
 
-        # Path to your SVG file
-        svg_path = f"{current_dir}/assets/strava_button.svg"
-        with open(svg_path, "rb") as f:
-            svg_data = f.read()
-            b64_svg = base64.b64encode(svg_data).decode("utf-8")
-        svg_uri = f"data:image/svg+xml;base64,{b64_svg}"
+    # Path to your SVG file
+    svg_path = f"{current_dir}/assets/strava_button.svg"
+    with open(svg_path, "rb") as f:
+        svg_data = f.read()
+        b64_svg = base64.b64encode(svg_data).decode("utf-8")
+    svg_uri = f"data:image/svg+xml;base64,{b64_svg}"
 
-        st.markdown(f"""
-            <style>
-            .cta-container {{
-                background-color: #f8f9fa;
-                padding: 30px;
-                border-radius: 10px;
-                margin-top: 20px;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-            }}
-            .strava-button {{
-                display: inline-block;
-                cursor: pointer;
-                transition: transform 0.2s;
-            }}
-            .strava-button:hover {{
-                transform: scale(1.02);
-            }}
-            </style>
-            <div class="cta-container" style="text-align: center;">
-                <p style="margin-bottom: 15px; font-size: 16px; color: #222831;">
-                    Connecta el teu perfil i comença l'anàlisi
-                </p>
-                <a href="{AUTH_URL}" class="strava-button">
-                    <img src="{svg_uri}" width="193" height="48" alt="Connect with Strava"/>
-                </a>
-            </div>
-        """, unsafe_allow_html=True)
+    st.markdown(f"""
+        <style>
+        .cta-container {{
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }}
+        .strava-button {{
+            display: inline-block;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }}
+        .strava-button:hover {{
+            transform: scale(1.02);
+        }}
+        </style>
+        <div class="cta-container" style="text-align: center;">
+            <p style="margin-bottom: 15px; font-size: 16px; color: #222831;">
+                Connecta el teu perfil i comença l'anàlisi
+            </p>
+            <a href="{AUTH_URL}" class="strava-button">
+                <img src="{svg_uri}" width="193" height="48" alt="Connect with Strava"/>
+            </a>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
     
-    st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("""
-            <div style="text-align: center;">
-                <h4>Volum</h4>
-                <p>Controlar la quantitat i progressar és clau</p>
+    # Convert background image to base64
+    background_path = f"{current_dir}/assets/background.jpeg"
+    with open(background_path, "rb") as f:
+        background_data = f.read()
+        b64_background = base64.b64encode(background_data).decode("utf-8")
+    background_uri = f"data:image/jpeg;base64,{b64_background}"
+    
+    # Create the entire section in a single markdown block
+    st.markdown(f"""
+        <style>
+        .background-container {{
+            background-image: url('{background_uri}');
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            padding: 40px 0;
+            width: 100%;
+            margin: 0;
+            position: relative;
+        }}
+        .background-container::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(87, 87, 87, 0.5);
+            z-index: 1;
+        }}
+        .content-wrapper {{
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+        }}
+        .column-content {{
+            flex: 1;
+            margin: 0 10px;
+            background: transparent;
+            padding: 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }}
+        .column-content h4 {{
+            color:rgb(255, 255, 255);
+            margin-bottom: 10px;
+        }}
+        .column-content p {{
+            color:rgb(255, 255, 255);
+        }}
+        </style>
+        <div class="background-container">
+            <div class="content-wrapper">
+                <div class="column-content">
+                    <h4>Volum</h4>
+                    <p>Controlar la quantitat i progressar és clau</p>
+                </div>
+                <div class="column-content">
+                    <h4>Freqüència</h4>
+                    <p>Comprova si estàs sent consistent</p>
+                </div>
+                <div class="column-content">
+                    <h4>Intensitat</h4>
+                    <p>Troba el nivell d'esforç adequat</p>
+                </div>
             </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        #st.image(f"{current_dir}/assets/screenshot_volumeweekly.png", width=60)
-        st.markdown("""
-            <div style="text-align: center;">
-                <h4>Freqüència</h4>
-                <p>Comprova si estàs sent consistent</p>
-            </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        #st.image(f"{current_dir}/assets/screenshot_volumeweekly.png", width=60)
-        st.markdown("""
-            <div style="text-align: center;">
-                <h4>Intensitat</h4>
-                <p>Troba el nivell d'esforç adequat</p>
-            </div>
-        """, unsafe_allow_html=True)
+        </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
