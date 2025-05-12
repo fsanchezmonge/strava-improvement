@@ -138,7 +138,7 @@ def main():
         }
         h4 {
             font-family: 'Helvetica Neue', sans-serif;
-            font-size: 22px;
+            font-size: 25px;
             color: #393E46;
             font-weight: bold;
             margin-top: 10px;
@@ -217,7 +217,7 @@ def main():
     st.markdown("""
         <div style="text-align: center; background-color: rgba(255, 255, 255, 0); padding: 20px 0; margin: 0;">
             <h1>Apren els bàsics, entrena millor</h1>
-            <h5>Analitza com et prepares per les teves curses i descobreix com pots millorar amb consells personalitzats</h5>
+            <h5>Analitza com prepares les teves curses i descobreix què pots millorar amb consells personalitzats</h5>
         </div>
     """, unsafe_allow_html=True)
 
@@ -249,12 +249,12 @@ def main():
             transition: transform 0.2s;
         }}
         .strava-button:hover {{
-            transform: scale(1.02);
+            transform: scale(1.04);
         }}
         </style>
         <div class="full-width-cta">
             <p style="margin-bottom: 20px; font-weight: normal; font-family: 'Helvetica Neue', sans-serif; font-size: 16px; color: #222831;">
-                Connecta el teu perfil i comença l'anàlisi
+                Connecta el teu perfil i comença
             </p>
             <a href="{AUTH_URL}" class="strava-button">
                 <img src="{svg_uri}" width="210" height="70" alt="Connect with Strava"/>
@@ -314,7 +314,7 @@ def main():
         }}
         .column-content {{
             flex: 1;
-            margin: 0 20px;
+            margin: 0 30px;
             background: transparent;
             padding: 60px;
             border-radius: 0;
@@ -323,10 +323,13 @@ def main():
         }}
         .column-content h4 {{
             color:rgb(255, 255, 255);
-            margin-bottom: 5px;
+            font-family: 'Helvetica Neue', sans-serif;
+            margin-bottom: 0px;
         }}
         .column-content p {{
             color:rgb(255, 255, 255);
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 16px;
         }}
         </style>
         <div class="full-width-bg">

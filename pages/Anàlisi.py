@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit as st
 import requests
 import pandas as pd
 from datetime import datetime, timezone
@@ -21,6 +20,63 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded"
 )
+
+# Add custom CSS for background colors and fonts
+st.markdown("""
+    <style>
+        .stApp {
+            background-color: white;
+        }
+        .main .block-container {
+            background-color: rgba(207, 240, 17, 0.27);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 40px;
+            color: #222831;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 28px;
+            color: #393E46;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        h3 {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 20px;
+            color: #393E46;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+        h4 {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 20px;
+            color: #393E46;
+            font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        h5 {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 16px;
+            color: #393E46;
+            font-weight: normal;
+            margin-bottom:10px;
+        }
+        p {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 14px;
+            color: #393E46;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Load environment variables
 load_dotenv()
@@ -316,7 +372,7 @@ def add_intensity_index(df: pd.DataFrame, reference_pace: float, race_distance: 
     
     st.markdown(
     f"""
-    ###### El ritme llindar estimat és {adjusted_reference_pace_str}.
+    ##### El ritme llindar estimat és **{adjusted_reference_pace_str}**.
     """
     )
 
@@ -454,7 +510,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
     """
     Display a summary of training analysis with recommendations
     """
-    st.markdown("### **Resum del període**")
+    st.markdown("## Resum i recomanacions")
     
     # Analyze each component
     volume_analysis = analyze_volume_progression(weekly_distance)
@@ -469,53 +525,54 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
     
     with col1:
         with st.container(border=True, height=300):
-            st.markdown("#### Volum")
+            st.markdown("### Volum")
             if volume_analysis['pct_too_large'] > 50:
                 st.warning("⚠️ Canvis setmanals massa grans")
-                messages.append("- Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió.")
+                messages.append("##### - Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió.")
             else:
                 st.success("✅ Progressió gradual del volum")
-                messages.append("- La progressió setmanal de volumn és adequada, al voltant del 10%.")
+                messages.append("##### - La progressió setmanal de volumn és adequada, al voltant del 10%.")
                 
             if not volume_analysis['has_recovery']:
                 st.warning("⚠️ No es detecten setmanes de recuperació")
-                messages.append("- Considera incloure setmanes de recuperació (reduïr entre 20%-30% el volum) cada 3-4 setmanes.")
+                messages.append("##### - Considera incloure setmanes de recuperació (reduïr entre 20%-30% el volum) cada 3-4 setmanes.")
             elif volume_analysis['recovery_freq'] < 2:
                 st.warning("⚠️ Falta de consistència del volum")
-                messages.append("- El volum no incrementa gradualment, intenta mantenir un volum factible i pujar-lo gradualment.")
+                messages.append("##### - El volum no incrementa gradualment, intenta mantenir un volum factible i pujar-lo gradualment.")
             elif volume_analysis['recovery_freq'] > 5:
                 st.warning("⚠️ Falta de setmanes de recuperació")
-                messages.append("- Considera fer setmanes de recuperació més sovint.")
+                messages.append("##### - Considera fer setmanes de recuperació més sovint.")
             else:
-                st.success("✅ Bona distribució de setmanes de recuperació") 
+                st.success("✅ S'inclouen setmanes de recuperació") 
             
     with col2:
         with st.container(border=True, height=300):
-            st.markdown("#### Freqüència")
+            st.markdown("### Freqüència")
             if frequency_analysis['cv'] < 25:
                 st.success("✅ Freqüència consistent")
-                messages.append(f"- Mantens una freqüència constant al voltant de {frequency_analysis['mode_sessions']} sessions/setmana.")
+                messages.append(f"##### - Mantens una freqüència constant al voltant de {frequency_analysis['mode_sessions']} sessions/setmana.")
             else:
                 st.warning("⚠️ Freqüència irregular")
-                messages.append("- Intenta mantenir una freqüència més constant d'entrenaments.")
+                messages.append("##### - Intenta mantenir una freqüència més constant d'entrenaments.")
                   
     with col3:
         with st.container(border=True, height=300):
-            st.markdown("#### Intensitat")
+            st.markdown("### Intensitat")
             if abs(intensity_analysis['deviation']) <= 10:
                 st.success("✅ Bona distribució d'intensitat")
-                messages.append("- La teva distribució d'intensitat s'apropa al 80 (baixa) / 20 (mitja-alta) recomanat.")
+                messages.append("##### - La teva distribució d'intensitat s'apropa al 80 (baixa) / 20 (mitja-alta) recomanat.")
             else:
                 if intensity_analysis['easy_percentage'] < 70:
                     st.warning("⚠️ Massa sessions intenses")
-                    messages.append("- Considera fer més sessions a baixa intensitat.")
+                    messages.append("##### - Considera fer més sessions a baixa intensitat.")
                 else:
                     st.warning("⚠️ Distribució d'intensitat desequilibrada")
-                    messages.append("- Intenta ajustar la distribució d'intensitats al 80 (baixa) / 20 (mitja-alta).")
+                    messages.append("##### - Intenta ajustar la distribució d'intensitats al 80 (baixa) / 20 (mitja-alta).")
 
     # Display all messages together below the columns
-    st.markdown("#### Recomanacions:")
-    st.markdown("\n".join(messages))
+    #st.markdown("### Recomanacions:")
+    with st.container(border=True):
+        st.markdown("\n".join(messages))
 
 def get_segments_data(activities, get_activity_details, get_segment_details, access_token):
     """
@@ -678,7 +735,6 @@ def main():
         Fent servir l'aplicació acceptes la  [Política de privacitat](https://github.com/fsanchezmonge/strava-improvement/blob/main/privacy_policy.md)
         """
 
-    st.title("Analitza el teu entrenament!:running::chart_with_upwards_trend:")
     st.write("")
     df = None
     # Initialize session state
@@ -782,10 +838,11 @@ def main():
             df_filtered = df[mask]
 
         """
-        ### **Volum**
-        **Incrementar gradualment** i **ser consistent** amb el volum setmanal és un molt bon signe de millora del nivell de forma. Una norma general és estar al voltant del **10% de variació setmanal**.
+        ## Volum
+        
+        ##### Incrementar gradualment i ser consistent amb el volum setmanal és un molt bon signe de millora del nivell de forma. Una norma general és estar al voltant del **10% de variació setmanal**.
 
-        Si entrenes per muntanya, pot ser important combinar distància amb temps per tenir en compte la desigualtat del terreny i el desnivell.
+        ##### Si entrenes per muntanya, pot ser important combinar distància amb temps per tenir en compte la desigualtat del terreny i el desnivell.
         """
         # Create tabs for distance and time charts
         tab1, tab2 = st.tabs(["📏 Distància", "⏱️ Temps"])
@@ -950,13 +1007,13 @@ def main():
             st.plotly_chart(fig_time, use_container_width=True)
 
         """        
-        ##### Sortides llargues
+        #### Sortides llargues
 
-        Com de llarga ha de ser la teva sortida llarga dependrà del teu nivell i objectiu, però el més important és **començar amb una distància que et permeti progressar setmana a setmana** sense impactar excessivament en la resta de sessions. 
+        ##### Com de llarga ha de ser la teva sortida llarga dependrà del teu nivell i objectiu, però el més important és **començar amb una distància que et permeti progressar setmana a setmana** sense impactar excessivament en la resta de sessions. 
         
-        Una forma de comprovar això és mantenir la distància d'aquesta sortida entre el 30% i el 40% del total setmanal (ho pots veure al gràfic de sota).
+        ##### Una forma de comprovar això és mantenir la distància d'aquesta sortida entre el 30% i el 40% del total setmanal (ho pots veure al gràfic de sota).
 
-        Incrementar la distància setmana a setmana amb ritmes semblants és un bon indicador de que estàs millorant.
+        ##### Incrementar la distància setmana a setmana amb ritmes semblants és un bon indicador de que estàs millorant.
         """
         
         # Get longest activity per week and weekly totals
@@ -1095,10 +1152,10 @@ def main():
         st.plotly_chart(fig_longest, use_container_width=True)
         
         """
-        ### **Freqüència**
-        Una major freqüència d'entrenament pot ser beneficiosa perquè produeix estímuls més constants i **distribueix millor la fatiga**, evitant sessions amb càrrega excessiva.
+        ## Freqüència
+        ##### Una major freqüència d'entrenament pot ser beneficiosa perquè produeix estímuls més constants i **distribueix millor la fatiga**, evitant sessions amb càrrega excessiva.
 
-        Busca la freqüència que et permeti **ser consistent** i trobar l'organització per **entrenar de forma continuada en el temps**.
+        ##### Busca la freqüència que et permeti **ser consistent** i trobar l'organització per **entrenar de forma continuada en el temps**.
         """
         
         # Count sessions per week
@@ -1152,9 +1209,9 @@ def main():
         st.plotly_chart(fig_sessions, use_container_width=True)
 
         """
-        ### **Intensitat**
+        ## Intensitat
 
-        Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment.
+        ##### Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment.
         """      
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
             st.write("""
@@ -1191,7 +1248,9 @@ def main():
             # Rename columns
             races_display.columns = ['Nom', 'Tipus', 'Data', 'Distància (km)', 'Temps (hh:min)', 'Ritme (min/km)']
             
-            st.write("Aquesta és la cursa amb ritme més alt detectada:")
+            st.markdown("""
+                        ##### Aquesta és la cursa amb ritme més alt detectada:
+                        """)
             st.dataframe(
                 races_display,
                 use_container_width=True,
@@ -1202,7 +1261,9 @@ def main():
             race_pace_detected = speed_to_pace(race_speed)
             race_distance_detected = race_activities['distance'].iloc[0]
 
-            st.write("O introueix un altre ritme i distància d'una cursa anterior o un entrenament:")
+            st.markdown("""
+                        ##### O introueix un altre ritme i distància d'una cursa anterior o un entrenament:
+                        """)
         else:
             st.warning("No s'ha detectat cap cursa al periode seleccionat. Introdueix un ritme i distància de referència manualment:")
 
@@ -1232,7 +1293,7 @@ def main():
             # default_index remains 0 (manual) as it's the only option
 
         selection = st.radio(
-            "Selecciona el ritme de referència:",
+            'Selecciona el ritme de referència:',
             options=radio_options,
             index=default_index
         )
@@ -1247,10 +1308,9 @@ def main():
             race_pace = race_pace_manual
 
         """        
-        A partir d'aquest, estimarem el ritme màxim que podries mantenir durant 1 hora, que és un indicador de resistència i té rellevància fisiològica, i el farem servir per classificar cada entrenament en baixa, mitjana o alta intensitat en funció del ritme mitjà.
+        ##### A partir d'aquest, estimarem el ritme màxim que podries mantenir durant 1 hora, que és un indicador de resistència i té rellevància fisiològica, i el farem servir per classificar cada entrenament en baixa, mitjana o alta intensitat en funció del ritme mitjà.
         """
-        st.warning("La classificació es calcula en funció del ritme mitjà de cada entrenament, per tant, hi ha casos on potser l'entrenament pot ser més intens del que indica el resultat (p.ex: intervals curts).")          
-                # After creating df_filtered, add the pace column
+        # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
         df_intensity = add_intensity_index(df_filtered, race_pace, race_distance)
 
