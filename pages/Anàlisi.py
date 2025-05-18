@@ -18,7 +18,7 @@ st.set_page_config(
     page_title="Analitza el teu entrenament",
     page_icon=":running:",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Add custom CSS for background colors and fonts
@@ -28,6 +28,14 @@ st.markdown("""
             max-width: 100% !important;
             padding: 0 !important;
             background-color: #fcfcfc !important;
+        }
+        /* Hide sidebar */
+        section[data-testid="stSidebar"] {
+            display: none;
+        }
+        /* Adjust main content to use full width */
+        section[data-testid="stSidebar"] + div {
+            width: 100% !important;
         }
         h1 {
             font-family: 'Helvetica Neue', sans-serif;
