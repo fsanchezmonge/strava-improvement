@@ -366,18 +366,13 @@ def add_intensity_index(df: pd.DataFrame, reference_pace: float, race_distance: 
     adjusted_reference_pace = reference_pace * factor
     adjusted_reference_pace_str = decimal_pace_to_str(adjusted_reference_pace)
     
-    st.markdown(
-    f"""
-    ##### El ritme llindar estimat és **{adjusted_reference_pace_str}**.
-    """
-    )
 
     # Calculate intensity index
     df["intensity_index"] = df["average_pace"] / adjusted_reference_pace
 
     df["intensity_zone_pace"] = df["intensity_index"].apply(label_intensity)
 
-    return df
+    return df, adjusted_reference_pace_str
 
 def speed_to_pace(speed_kmh):
     """Convert speed (km/h) to pace (min/km)"""
@@ -521,7 +516,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
     
     with col1:
         with st.container(border=True, height=300):
-            st.markdown("### Volum")
+            st.markdown("### **Volum**")
             if volume_analysis['pct_too_large'] > 50:
                 st.warning("⚠️ Canvis setmanals massa grans")
                 messages.append("##### - Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió.")
@@ -543,7 +538,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
             
     with col2:
         with st.container(border=True, height=300):
-            st.markdown("### Freqüència")
+            st.markdown("### **Freqüència**")
             if frequency_analysis['cv'] < 25:
                 st.success("✅ Freqüència consistent")
                 messages.append(f"##### - Mantens una freqüència constant al voltant de {frequency_analysis['mode_sessions']} sessions/setmana.")
@@ -553,7 +548,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
                   
     with col3:
         with st.container(border=True, height=300):
-            st.markdown("### Intensitat")
+            st.markdown("### **Intensitat**")
             if abs(intensity_analysis['deviation']) <= 10:
                 st.success("✅ Bona distribució d'intensitat")
                 messages.append("##### - La teva distribució d'intensitat s'apropa al 80 (baixa) / 20 (mitja-alta) recomanat.")
@@ -1209,16 +1204,17 @@ def main():
 
         st.plotly_chart(fig_longest, use_container_width=True)
         
+        st.divider()
         st.markdown("## Freqüència")
         
         st.markdown("""
         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;">
-                    <h5>Una major freqüència d'entrenament pot ser beneficiosa perquè produeix estímuls més constants i <span style="text-decoration: underline; text-decoration-color: #FFD700; text-decoration-thickness: 3px;">distribueix millor la fatiga</span>, evitant sessions amb càrrega excessiva.</h5>
+                    <h5>🎯 Una major freqüència d'entrenament pot ser beneficiosa perquè produeix estímuls més constants i <span style="text-decoration: underline; text-decoration-color: #FFD700; text-decoration-thickness: 3px;">distribueix millor la fatiga</span>, evitant sessions amb càrrega excessiva.</h5>
                 </div>
                 <div style="flex: 1;">
-                    <h5>Busca la freqüència que et permeti <strong>ser consistent</strong> i trobar l'organització per <strong>entrenar de forma continuada en el temps</strong>.</h5>
+                    <h5>📈 Busca la freqüència que et permeti <span style="background-color: #FFD700;">ser consistent</span> i trobar l'organització per <span style="background-color: #FFD700;">entrenar de forma continuada en el temps</span>.</h5>
                 </div>
             </div>
         </div>
@@ -1234,52 +1230,116 @@ def main():
         # Create a combined year-week label for x-axis
         weekly_sessions['Week_Label'] = weekly_sessions.apply(lambda x: f"S{int(x['Week']):02d}", axis=1)
 
-        # Add metric for mode sessions (changed from median)
+        # Calculate metrics for all activities
         mode_sessions = weekly_sessions['Sessions'].mode()[0]  # [0] because mode can return multiple values
-        st.metric("Num. de sessions més freqüent", f"{mode_sessions:.0f}")
-        
+        avg_sessions = weekly_sessions['Sessions'].mean()
+
+        # Calculate metrics for Run activities only
+        weekly_runs = df_filtered[df_filtered['sport'] == 'Run'].groupby([
+            df_filtered['datetime_local'].dt.isocalendar().year,
+            df_filtered['datetime_local'].dt.isocalendar().week
+        ]).size().reset_index()
+        weekly_runs.columns = ['Year', 'Week', 'Runs']
+        avg_runs = weekly_runs['Runs'].mean()
+
+        # Create three columns for the metrics
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown(f"""
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; font-family: 'Helvetica Neue', sans-serif; color: #666666;">Nombre de sessions més repetit</div>
+                    <div style="font-size: 24px; font-weight: bold;">{mode_sessions:.0f}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; font-family: 'Helvetica Neue', sans-serif; color: #666666;">Nombre mitjà d'activitats de running</div>
+                    <div style="font-size: 24px; font-weight: bold;">{avg_runs:.0f}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
         # Create the sessions bar chart
-        fig_sessions = go.Figure(data=[
-            go.Bar(
-                x=weekly_sessions['Week_Label'],
+        # Add date column for x-axis labels
+        weekly_sessions['Week_Start_Date'] = pd.to_datetime(weekly_sessions['Year'].astype(str) + '-' + 
+                                                          weekly_sessions['Week'].astype(str) + '-1', 
+                                                          format='%Y-%W-%w')
+        
+        weekly_sessions['Date_Label'] = weekly_sessions['Week_Start_Date'].dt.strftime('%d-%b-%Y')
+        weekly_sessions['Date_Label'] = weekly_sessions['Date_Label'].apply(
+            lambda x: x.replace(x[3:6], catalan_months[x[3:6]])
+        )
+
+        # Create two columns for the chart and description
+        col1_chart, col2_desc = st.columns([0.7, 0.3])
+
+        with col1_chart:
+            st.write("")
+            fig_sessions = go.Figure(data=go.Scatter(
+                x=weekly_sessions['Date_Label'],
                 y=weekly_sessions['Sessions'],
+                mode='markers+text',
+                marker=dict(
+                    size=weekly_sessions['Sessions'] * 5,
+                    color=weekly_sessions['Sessions'],
+                    colorscale='Reds',
+                    showscale=False
+                ),
                 text=weekly_sessions['Sessions'],
-                textposition='auto',
+                textposition='top center'
+            ))
+
+            fig_sessions.update_layout(
+                title='Sessions per setmana',
+                xaxis_title='Setmana',
+                yaxis_title='',
+                plot_bgcolor='#fcfcfc',
+                paper_bgcolor='#fcfcfc',
+                yaxis=dict(
+                    showgrid=False,
+                    showticklabels=False,
+                    showline=False
+                ),
+                xaxis=dict(
+                    showgrid=False,
+                    showline=False,
+                    tickangle=45
+                )
             )
-        ])
-        
-        # Update layout
-        fig_sessions.update_layout(
-            title='Sessions per setmana',
-            xaxis_title='Setmana',
-            yaxis_title='Nombre de sessions',
-            showlegend=False,
-            plot_bgcolor='#fcfcfc',
-            paper_bgcolor='#fcfcfc'
-        )
-        
-        # Update axes
-        fig_sessions.update_xaxes(
-            showgrid=False,
-            gridwidth=1,
-            gridcolor='#fcfcfc'
-        )
-        fig_sessions.update_yaxes(
-            showgrid=False,
-            gridwidth=1,
-            gridcolor='#fcfcfc',
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor='#fcfcfc'
-        )
-        
-        st.plotly_chart(fig_sessions, use_container_width=True)
 
-        """
-        ## Intensitat
+            st.plotly_chart(fig_sessions, use_container_width=True)
 
-        ##### Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment.
-        """      
+        with col2_desc:
+            st.write("")
+            st.markdown("""
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                <h5>📊 <strong>Com interpretar el gràfic</strong></h5>
+                <p>• Les bombolles mostren el nombre de sessions per setmana, la mida de cada bombolla és proporcional al nombre de sessions.</p>
+                <p>• A la part superior es mostra el nombre més freqüent de sessions setmanals (la moda) i la mitjana d'entrenaments de running.</p>
+                <br>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.divider()
+        st.markdown("## Intensitat")
+        
+        st.markdown("""
+        <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <h5>🔋 El grau d'esforç (intensitat) de cada entrenament determina el tipus d'adaptacions que es produeixen al teu cos.</h5>
+                </div>
+                <div style="flex: 1;">
+                    <h5>❗️ Per a la majoria de corredors la distribució recomanada és de <span style="background-color: #90EE90;">80% del volumn a intensitat baixa</span> i <span style="background-color: #FFB6C1;">20% a intensitat alta</span>.</h5>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("""
+                    ##### Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment..
+         """)
+        
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
             st.write("""
             Quan vagis a pujar la teva activitat (o l'editis), selecciona el primer desplegable sota 'Detalls' i canvia el tipus a 'Prueba' (per defecte està marcat com 'Entrenamiento').
@@ -1314,7 +1374,6 @@ def main():
             
             # Rename columns
             races_display.columns = ['Nom', 'Tipus', 'Data', 'Distància (km)', 'Temps (hh:min)', 'Ritme (min/km)']
-            
             st.markdown("""
                         ##### Aquesta és la cursa amb ritme més alt detectada:
                         """)
@@ -1374,17 +1433,29 @@ def main():
             race_distance = race_distance_manual
             race_pace = race_pace_manual
 
-        """        
-        ##### A partir d'aquest, estimarem el ritme màxim que podries mantenir durant 1 hora, que és un indicador de resistència i té rellevància fisiològica, i el farem servir per classificar cada entrenament en baixa, mitjana o alta intensitat en funció del ritme mitjà.
-        """
         # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
-        df_intensity = add_intensity_index(df_filtered, race_pace, race_distance)
+        df_intensity, adjusted_reference_pace_str = add_intensity_index(df_filtered, race_pace, race_distance)
 
         #st.dataframe(df_intensity[['datetime_local', 'average_pace', 'intensity_index', 'intensity_zone_pace', 'average_heartrate']])
         easy_percentage = compute_easy_percentage(df_intensity)
-        st.metric("% de sessions amb intensitat baixa", f"{easy_percentage:.0f}%",help="La distribució més recomanada per la majoria de corredors és **80% dels dies a baixa intensitat** i **20% dels dies a moderada o alta intensitat**.")
-
+        
+        col1_int, col2_int = st.columns(2)
+        with col1_int:
+            st.markdown(f"""
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; font-family: 'Helvetica Neue', sans-serif; color: #666666;">Ritme llindar estimat</div>
+                    <div style="font-size: 24px; font-weight: bold;">{adjusted_reference_pace_str}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col2_int:
+            st.markdown(f"""
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; font-family: 'Helvetica Neue', sans-serif; color: #666666;">% de dies d'intensitat baixa</div>
+                    <div style="font-size: 24px; font-weight: bold; color: {'#2ecc71' if easy_percentage >= 80 else '#f1c40f'};">{easy_percentage:.0f}%</div>
+                </div>
+            """, unsafe_allow_html=True)
+        st.write("")
         # Group by week and intensity zone to get counts
         intensity_by_week = df_intensity.groupby([
             df_intensity['datetime_local'].dt.isocalendar().year,
@@ -1416,7 +1487,8 @@ def main():
                     y=intensity_by_week[mask]['Count'],
                     text=intensity_by_week[mask]['Count'],
                     textposition='auto',
-                    marker_color=intensity_colors[intensity]  # Set color for each intensity
+                    marker_color=intensity_colors[intensity]
+                     # Set color for each intensity
                 )
             )
 
@@ -1426,7 +1498,8 @@ def main():
             xaxis_title='Setmana',
             yaxis_title='Nombre de sessions',
             barmode='stack',
-            plot_bgcolor='white',
+            plot_bgcolor='#fcfcfc',
+            paper_bgcolor='#fcfcfc',
             showlegend=False,
             legend=dict(
                 yanchor="top",
@@ -1440,10 +1513,10 @@ def main():
         fig_intensity.update_xaxes(
             showgrid=False,
             gridwidth=1,
-            gridcolor='LightGray'
+            gridcolor='LightGray'        
         )
         fig_intensity.update_yaxes(
-            showgrid=True,
+            showgrid=False,
             gridwidth=1,
             gridcolor='LightGray',
             zeroline=True,
