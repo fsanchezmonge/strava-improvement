@@ -526,7 +526,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
         with st.container(border=True, height=300):
             st.markdown("### **Volum**")
             if volume_analysis['pct_too_large'] > 50:
-                st.warning("⚠️ Canvis setmanals massa grans")
+                st.warning("⚠️ Variació setmanal massa gran")
                 messages.append("##### - Intenta que els canvis setmanals siguin més suaus (±10%) per reduir el risc de lesió.")
             else:
                 st.success("✅ Progressió gradual del volum")
@@ -746,11 +746,22 @@ def main():
             )
         if 'selected_activity_type' not in st.session_state:
             st.session_state.selected_activity_type = "Totes"
-
-        with st.container(border=True):
+        st.markdown("""
+        <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <h5>🔍 Per començar, selecciona el període de temps i els esports que vols incloure en l'anàlisi.</h5>
+                </div>
+                <div style="flex: 1;">
+                    <h5>📆 Recomanem un període d'<strong>entre 2 i 4 mesos</strong>, on l'últim dia seleccionat és el de la cursa que vols analitzar.</h5>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.container(border=False):
             # Modify the form to update session state
-            with st.form("date_selection_form", border=False):
-                col1, col2 = st.columns(2)
+            with st.form("date_selection_form", border=True):
+                col1, col2, col3 = st.columns([1,2,1])
                 with col1:
                     selected_dates = st.date_input(
                         "",
@@ -768,7 +779,8 @@ def main():
                         key="activity_type_select",
                         placeholder="Totes les activitats"
                     )
-                submit_dates = st.form_submit_button("Guardar")
+                with col3:
+                    submit_dates = st.form_submit_button("Guardar")
                 
                 if submit_dates:
                     st.session_state.date_range = selected_dates
@@ -1119,7 +1131,7 @@ def main():
             st.markdown("""
             <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
                 <h5><strong>Com interpretar la taula</strong> 📊</h5>
-                <p>• La taula mostra l'entrenament més llarg de cada setmana i el percentatge que la distància d'aquesta sortida representa respecte el total setmanal.</p>
+                <p>• La taula mostra l'entrenament més llarg de cada setmana per activitats de running i el percentatge que la distància d'aquesta sortida representa respecte el total setmanal.</p>
                 <p>• El fons <span style="color: green;">verd</span> indica que la sortida llarga està dintre del rang recomanat (30-40% del total), mentre que el fons <span style="color:#DAA520;">groc</span> indica està fora.</p>
                 <p>• Si es detecta una activitat marcada com a cursa a Strava, es mostrarà de color <span style="color: red;">vermell</span>.</p>
                 <br>
@@ -1345,7 +1357,7 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         st.markdown("""
-                    ##### Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment..
+                    ##### Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment si prefereixes fer servir un diferent.
          """)
         
         with st.expander("*Com puc marcar una activitat com a cursa a Strava?*"):
@@ -1383,7 +1395,7 @@ def main():
             # Rename columns
             races_display.columns = ['Nom', 'Tipus', 'Data', 'Distància (km)', 'Temps (hh:min)', 'Ritme (min/km)']
             st.markdown("""
-                        ##### Aquesta és la cursa amb ritme més alt detectada:
+                        ##### Aquesta és la cursa amb ritme més alt detectada en el període:
                         """)
             st.dataframe(
                 races_display,
@@ -1396,7 +1408,7 @@ def main():
             race_distance_detected = race_activities['distance'].iloc[0]
 
             st.markdown("""
-                        ##### O introueix un altre ritme i distància d'una cursa anterior o un entrenament:
+                        ##### Introdueix un altre ritme i distància d'una cursa anterior o un entrenament si ho prefereixes:
                         """)
         else:
             st.warning("No s'ha detectat cap cursa al periode seleccionat. Introdueix un ritme i distància de referència manualment:")
@@ -1448,6 +1460,20 @@ def main():
         #st.dataframe(df_intensity[['datetime_local', 'average_pace', 'intensity_index', 'intensity_zone_pace', 'average_heartrate']])
         easy_percentage = compute_easy_percentage(df_intensity)
         
+        st.markdown("""
+        <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <h5>⏱️ Amb el ritme introduït, l'aplicació calcula un ritme que seria una <span style="background-color: #FFD700;">estimació</span> del ritme que pots sostenir aproxiadament durant una hora.</h5>
+                </div>
+                <div style="flex: 1;">
+                    <h5>🏃‍♂️ Aquesta estimació ens servirà per classificar els entrenaments en <span style="background-color: #2ecc71;">baixa</span>, <span style="background-color: #f1c40f;">mitjana</span> o <span style="background-color: #e74c3c;">alta</span> intensitat fent servir el seu ritme mitjà segons a quin percentatge d'aquest es trobin.</h5>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.write("")
+
         col1_int, col2_int = st.columns(2)
         with col1_int:
             st.markdown(f"""
@@ -1472,67 +1498,93 @@ def main():
         ]).size().reset_index()
         intensity_by_week.columns = ['Year', 'Week', 'Intensity', 'Count']
 
-        # Create week labels
-        intensity_by_week['Week_Label'] = intensity_by_week.apply(lambda x: f"S{int(x['Week']):02d}", axis=1)
+        # Add date column for x-axis labels
+        intensity_by_week['Week_Start_Date'] = pd.to_datetime(intensity_by_week['Year'].astype(str) + '-' + 
+                                                            intensity_by_week['Week'].astype(str) + '-1', 
+                                                            format='%Y-%W-%w')
+        
+        # Format date with Catalan months
+        intensity_by_week['Date_Label'] = intensity_by_week['Week_Start_Date'].dt.strftime('%d-%b-%Y')
+        intensity_by_week['Date_Label'] = intensity_by_week['Date_Label'].apply(
+            lambda x: x.replace(x[3:6], catalan_months[x[3:6]])
+        )
+        col1_int_chart, col2_int_desc = st.columns([0.7, 0.3])
+        with col1_int_chart:
+            # Create stacked bar chart
+            fig_intensity = go.Figure()
 
-        # Create stacked bar chart
-        fig_intensity = go.Figure()
+            # Define colors for each intensity zone
+            intensity_colors = {
+                'Baixa': '#2ecc71',    # Green
+                'Moderada': '#f1c40f', # Yellow
+                'Alta': '#e74c3c'      # Red
+            }
 
-        # Define colors for each intensity zone
-        intensity_colors = {
-            'Baixa': '#2ecc71',    # Green
-            'Moderada': '#f1c40f', # Yellow
-            'Alta': '#e74c3c'      # Red
-        }
+            # Add bars for each intensity zone
+            for intensity in ['Baixa', 'Moderada', 'Alta']:
+                mask = intensity_by_week['Intensity'] == intensity
+                fig_intensity.add_trace(
+                    go.Bar(
+                        name=intensity,
+                        x=intensity_by_week[mask]['Date_Label'].unique(),
+                        y=intensity_by_week[mask]['Count'],
+                        text=intensity_by_week[mask]['Count'],
+                        textposition='auto',
+                        marker_color=intensity_colors[intensity],
+                        textfont=dict(
+                            size=14,
+                            color='white'
+                        )
+                    )
+                )
 
-        # Add bars for each intensity zone
-        for intensity in ['Baixa', 'Moderada', 'Alta']:
-            mask = intensity_by_week['Intensity'] == intensity
-            fig_intensity.add_trace(
-                go.Bar(
-                    name=intensity,
-                    x=intensity_by_week[mask]['Week_Label'].unique(),
-                    y=intensity_by_week[mask]['Count'],
-                    text=intensity_by_week[mask]['Count'],
-                    textposition='auto',
-                    marker_color=intensity_colors[intensity]
-                     # Set color for each intensity
+            # Update layout
+            fig_intensity.update_layout(
+                title='Distribució de la intensitat: sessions per setmana',
+                xaxis_title='Setmana',
+                yaxis_title='Nombre de sessions',
+                barmode='stack',
+                plot_bgcolor='#fcfcfc',
+                paper_bgcolor='#fcfcfc',
+                showlegend=False,
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01
+                ),
+                xaxis=dict(
+                    tickangle=45  # Rotate labels for better readability
                 )
             )
 
-        # Update layout
-        fig_intensity.update_layout(
-            title='Distribució de la intensitat: sessions per setmana',
-            xaxis_title='Setmana',
-            yaxis_title='Nombre de sessions',
-            barmode='stack',
-            plot_bgcolor='#fcfcfc',
-            paper_bgcolor='#fcfcfc',
-            showlegend=False,
-            legend=dict(
-                yanchor="top",
-                y=0.99,
-                xanchor="left",
-                x=0.01
+            # Update axes
+            fig_intensity.update_xaxes(
+                showgrid=False,
+                gridwidth=1,
+                gridcolor='LightGray'        
             )
-        )
+            fig_intensity.update_yaxes(
+                showgrid=False,
+                gridwidth=1,
+                gridcolor='LightGray',
+                zeroline=True,
+                zerolinewidth=1,
+                zerolinecolor='LightGray'
+            )
 
-        # Update axes
-        fig_intensity.update_xaxes(
-            showgrid=False,
-            gridwidth=1,
-            gridcolor='LightGray'        
-        )
-        fig_intensity.update_yaxes(
-            showgrid=False,
-            gridwidth=1,
-            gridcolor='LightGray',
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor='LightGray'
-        )
-
-        st.plotly_chart(fig_intensity, use_container_width=True)
+            st.plotly_chart(fig_intensity, use_container_width=True)
+            
+        with col2_int_desc:
+            st.markdown("""
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <h5><strong>Com interpretar el gràfic</strong> 📊</h5>
+                    <p>• Les barres mostren la distribució de sessions per setmana segons la seva intensitat.</p>
+                    <p>• El color <span style="color: #2ecc71;">verd</span> indica baixa intensitat, <span style="color: #f1c40f;">groc</span> mitjana i <span style="color: #e74c3c;">vermell</span> alta intensitat.</p>
+                    <p>• Per millorar a llarg termini, intenta mantenir una proporció aproximada del <span style="background-color: #2ecc71; color: white; padding: 2px 5px;">80%</span> de sessions a baixa intensitat i <span style="background-color: #e74c3c; color: white; padding: 2px 5px;">20%</span> a alta intensitat.</p>
+                    <br>
+                </div>
+                """, unsafe_allow_html=True)
 
         st.divider()
 
