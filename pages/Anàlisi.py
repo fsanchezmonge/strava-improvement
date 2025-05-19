@@ -1348,7 +1348,7 @@ def main():
         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;">
-                    <h5>🔋 El grau d'esforç (intensitat) de cada entrenament determina el tipus d'adaptacions que es produeixen al teu cos.</h5>
+                    <h5>🔋 El grau d'esforç (intensitat) de cada sessió té un gran impacte en el tipus d'estímul que l'entrenament produeix al teu cos.</h5>
                 </div>
                 <div style="flex: 1;">
                     <h5>❗️ Per a la majoria de corredors la distribució recomanada és de <span style="background-color: #90EE90;">80% del volumn a intensitat baixa</span> i <span style="background-color: #FFB6C1;">20% a intensitat alta</span>.</h5>
