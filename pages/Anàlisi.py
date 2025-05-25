@@ -6,7 +6,6 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import plotly.graph_objects as go
-from scipy import stats
 import time
 from plotly.subplots import make_subplots
 import pathlib
