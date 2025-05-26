@@ -250,7 +250,7 @@ def main():
             right: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
-            background-color: rgba(255, 255, 255, 0.6);
+            background-color: rgba(207, 240, 17, 0.20);
             padding: 20px 0;
             border-radius: 0;
             box-shadow: none;
