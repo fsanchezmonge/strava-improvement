@@ -15,8 +15,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Load environment variables
-load_dotenv()
+# Load environment variables only in local development
+if os.path.exists('.env'):
+    load_dotenv()
 
 # Initialize Supabase client
 url: str = st.secrets.get("SUPABASE_URL")
