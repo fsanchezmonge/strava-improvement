@@ -1037,11 +1037,11 @@ def main():
         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;">
-                    <h5>La distància dependrà del teu nivell i objectiu, però el més important és començar amb una distància que et permeti progressar setmana a setmana.</h5>
-                    <h5>Una forma de comprovar això és mantenir la distància d'aquesta sortida <strong>entre el 30% i el 40% del total setmanal</strong>.</h5>
+                    <h5>❔ La distància dependrà del teu nivell i objectiu, però el més important és començar amb una distància que et permeti progressar setmana a setmana.</h5>
+                    <h5>💭 Una forma de comprovar això és mantenir la distància d'aquesta sortida <strong>entre el 30% i el 40% del total setmanal</strong>.</h5>
                 </div>
                 <div style="flex: 1;">
-                    <h5>Incrementar la distància setmana a setmana amb ritmes semblants és un bon indicador de que estàs millorant.</h5>
+                    <h5>🔄 Incrementar la distància setmana a setmana amb ritmes semblants és un bon indicador de que estàs millorant.</h5>
                 </div>
             </div>
         </div>
@@ -1112,7 +1112,7 @@ def main():
         col1_long, col2_long = st.columns([0.7, 0.3])
         
         with col1_long:
-            st.write("**Sessió més llarga per setmana i % del total de distància setmanal**")
+            st.write("**Sessió més llarga per setmana i % del total de distància setmanal (de més recent a més antiga)**")
             st.dataframe(
                 longest_runs_display.style
                 .apply(lambda col: col.map(style_race_activities) if col.name == 'Nom' else [''] * len(col))
