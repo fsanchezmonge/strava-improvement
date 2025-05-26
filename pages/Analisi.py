@@ -713,6 +713,8 @@ def main():
         st.session_state.athlete_id = int(st.query_params['athlete_id'])
         # Clear the query params after setting them in session state
         st.query_params.clear()
+        # Force a rerun to ensure session state is properly set
+        st.rerun()
     
     # Log app open at the start of main with athlete_id=0 if not authenticated
     log_user_session(
@@ -721,14 +723,9 @@ def main():
         event_data={'session_id': st.session_state.get('session_id')}
     )
     df = None
-    # Initialize session state
-    if 'access_token' not in st.session_state:
-        st.session_state.access_token = None
-    if 'athlete_id' not in st.session_state:
-        st.session_state.athlete_id = None
 
     # Try to get stored token if we don't have one in session
-    if st.session_state.access_token is None:
+    if not st.session_state.get('access_token'):
         # Try to get a fresh token for this athlete
         fresh_token = ensure_fresh_token()
         if fresh_token:
@@ -736,7 +733,7 @@ def main():
             st.rerun()
         else:
             st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
-            st.markdown("[Connecta amb Strava](/landing)")
+            st.markdown("[Connecta amb Strava](/Inici)")
             st.stop()
 
     activities = get_activities(st.session_state.access_token)

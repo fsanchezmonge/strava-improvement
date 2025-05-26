@@ -202,6 +202,8 @@ def main():
                     # Store token in query params to persist across page switch
                     st.query_params["access_token"] = token_response['access_token']
                     st.query_params["athlete_id"] = str(token_response['athlete']['id'])
+                    # Force a rerun to ensure session state is updated
+                    st.rerun()
                     # Redirect to main app
                     st.switch_page("pages/Anàlisi.py")
                 else:
