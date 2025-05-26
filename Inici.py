@@ -16,8 +16,11 @@ st.set_page_config(
 )
 
 # Load environment variables only in local development
-if os.path.exists('.env'):
-    load_dotenv()
+try:
+    if os.path.exists('.env'):
+        load_dotenv()
+except Exception as e:
+    st.warning("Could not load .env file - this is normal in production environments")
 
 # Initialize Supabase client
 url: str = st.secrets.get("SUPABASE_URL")
