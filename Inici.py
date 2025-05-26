@@ -101,13 +101,13 @@ def main():
         .stApp {
             max-width: 100% !important;
             padding: 0 !important;
-            background-color: rgba(207, 240, 17, 0.20) !important;
+            background-color: rgba(255, 255, 255, 0.5) !important;
         }
         .main .block-container {
             max-width: 100% !important;
             padding: 0 !important;
             margin: 0px !important;
-            background-color: rgba(207, 240, 17, 0.20) !important;
+            background-color: rgba(255, 255, 255, 0.5) !important;
         }
         /* Remove all default padding and margins */
         .stApp > header {
@@ -228,7 +228,7 @@ def main():
     #col1, col2, col3 = st.columns([1, 3, 1])
     #with col2:
     st.markdown("""
-        <div style="text-align: center; background-color: rgba(207, 240, 17, 0.20); padding: 20px 0; margin: 0;">
+        <div style="text-align: center; background-color: rgba(255, 255, 255, 0.5); padding: 20px 0; margin: 0;">
             <h1>Apren els bàsics, entrena millor</h1>
             <h5>Analitza com prepares les teves curses i descobreix què pots millorar amb consells personalitzats</h5>
         </div>
