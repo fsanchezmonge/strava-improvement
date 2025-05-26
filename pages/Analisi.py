@@ -160,14 +160,21 @@ def save_token_to_supabase(token_data):
 
 def get_stored_token(athlete_id):
     """Get stored token from Supabase"""
-    response = supabase.table('strava_tokens').select('*').eq('athlete_id', athlete_id).execute()
-    if response.data:
-        return response.data[0]
-    return None
+    if athlete_id is None:
+        return None
+        
+    try:
+        response = supabase.table('strava_tokens').select('*').eq('athlete_id', athlete_id).execute()
+        if response.data:
+            return response.data[0]
+        return None
+    except Exception as e:
+        st.error(f"Error getting stored token: {str(e)}")
+        return None
 
 def ensure_fresh_token():
     """Ensure we have a valid token"""
-    if 'athlete_id' not in st.session_state:
+    if 'athlete_id' not in st.session_state or st.session_state.athlete_id is None:
         return None
         
     stored_token = get_stored_token(st.session_state.athlete_id)
@@ -178,13 +185,17 @@ def ensure_fresh_token():
     expires_at = datetime.fromisoformat(stored_token['expires_at'].replace('Z', '+00:00'))
     if expires_at <= datetime.now(timezone.utc):
         # Token is expired, refresh it
-        new_token = refresh_token(stored_token['refresh_token'])
-        new_token['athlete_id'] = stored_token['athlete_id']
+        try:
+            new_token = refresh_token(stored_token['refresh_token'])
+            new_token['athlete_id'] = stored_token['athlete_id']
 
-        if 'access_token' in new_token:
-            save_token_to_supabase(new_token)
-            return new_token['access_token']
-        return None
+            if 'access_token' in new_token:
+                save_token_to_supabase(new_token)
+                return new_token['access_token']
+            return None
+        except Exception as e:
+            st.error(f"Error refreshing token: {str(e)}")
+            return None
         
     return stored_token['access_token']
 
@@ -721,14 +732,9 @@ def main():
                     st.error("Error desconnectant Strava.")
 
     df = None
-    # Initialize session state
-    if 'access_token' not in st.session_state:
-        st.session_state.access_token = None
-    if 'athlete_id' not in st.session_state:
-        st.session_state.athlete_id = None
-
+    
     # Try to get stored token if we don't have one in session
-    if st.session_state.access_token is None:
+    if not st.session_state.access_token and st.session_state.athlete_id is not None:
         # Try to get a fresh token for this athlete
         fresh_token = ensure_fresh_token()
         if fresh_token:
@@ -738,6 +744,10 @@ def main():
             st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
             st.markdown("[Connecta amb Strava](/landing)")
             st.stop()
+    elif not st.session_state.access_token:
+        st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
+        st.markdown("[Connecta amb Strava](/landing)")
+        st.stop()
 
     activities = get_activities(st.session_state.access_token)
     if activities:
