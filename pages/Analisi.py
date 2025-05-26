@@ -170,14 +170,20 @@ def save_token_to_supabase(token_data):
 
 def get_stored_token(athlete_id):
     """Get stored token from Supabase"""
-    response = supabase.table('strava_tokens').select('*').eq('athlete_id', athlete_id).execute()
-    if response.data:
-        return response.data[0]
-    return None
+    if athlete_id is None:
+        return None
+    try:
+        response = supabase.table('strava_tokens').select('*').eq('athlete_id', athlete_id).execute()
+        if response.data:
+            return response.data[0]
+        return None
+    except Exception as e:
+        st.error(f"Error getting stored token: {str(e)}")
+        return None
 
 def ensure_fresh_token():
     """Ensure we have a valid token"""
-    if 'athlete_id' not in st.session_state:
+    if 'athlete_id' not in st.session_state or st.session_state.athlete_id is None:
         return None
         
     stored_token = get_stored_token(st.session_state.athlete_id)
@@ -188,13 +194,17 @@ def ensure_fresh_token():
     expires_at = datetime.fromisoformat(stored_token['expires_at'].replace('Z', '+00:00'))
     if expires_at <= datetime.now(timezone.utc):
         # Token is expired, refresh it
-        new_token = refresh_token(stored_token['refresh_token'])
-        new_token['athlete_id'] = stored_token['athlete_id']
+        try:
+            new_token = refresh_token(stored_token['refresh_token'])
+            new_token['athlete_id'] = stored_token['athlete_id']
 
-        if 'access_token' in new_token:
-            save_token_to_supabase(new_token)
-            return new_token['access_token']
-        return None
+            if 'access_token' in new_token:
+                save_token_to_supabase(new_token)
+                return new_token['access_token']
+            return None
+        except Exception as e:
+            st.error(f"Error refreshing token: {str(e)}")
+            return None
         
     return stored_token['access_token']
 
