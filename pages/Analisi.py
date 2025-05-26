@@ -19,6 +19,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Initialize session state variables
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+if 'access_token' not in st.session_state:
+    st.session_state.access_token = None
+if 'athlete_id' not in st.session_state:
+    st.session_state.athlete_id = None
+if 'was_running' not in st.session_state:
+    st.session_state.was_running = True
+
 # Add custom CSS for background colors and fonts
 st.markdown("""
     <style>
@@ -1623,10 +1633,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # Generate a unique session ID when the app starts
-    if 'session_id' not in st.session_state:
-        st.session_state.session_id = str(uuid.uuid4())
-        # Place the disconnect button at the top right
+    # Place the disconnect button at the top right
     if st.session_state.access_token:
         cols = st.columns([8, 1])
         with cols[1]:
