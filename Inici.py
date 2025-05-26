@@ -101,7 +101,7 @@ def main():
         .stApp {
             max-width: 100% !important;
             padding: 0 !important;
-            background-color: rgba(207, 240, 17, 0.20) !important;
+            background-color: rgba(255, 255, 255, 0.5) !important;
         }
         .main .block-container {
             max-width: 100% !important;
