@@ -188,11 +188,11 @@ def main():
             try:
                 token_response = get_token(code)
                 if 'access_token' in token_response:
-                    # Save token to Supabase first
-                    save_token_to_supabase(token_response)
                     # Store token in session state
                     st.session_state.access_token = token_response['access_token']
                     st.session_state.athlete_id = token_response['athlete']['id']
+                    # Save token to Supabase
+                    save_token_to_supabase(token_response)
                     # Log successful authorization
                     log_user_session(
                         athlete_id=token_response['athlete']['id'],

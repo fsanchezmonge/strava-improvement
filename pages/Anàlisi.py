@@ -19,16 +19,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Initialize session state variables
-if 'session_id' not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
-if 'access_token' not in st.session_state:
-    st.session_state.access_token = None
-if 'athlete_id' not in st.session_state:
-    st.session_state.athlete_id = None
-if 'was_running' not in st.session_state:
-    st.session_state.was_running = True
-
 # Add custom CSS for background colors and fonts
 st.markdown("""
     <style>
@@ -170,20 +160,14 @@ def save_token_to_supabase(token_data):
 
 def get_stored_token(athlete_id):
     """Get stored token from Supabase"""
-    if athlete_id is None:
-        return None
-    try:
-        response = supabase.table('strava_tokens').select('*').eq('athlete_id', athlete_id).execute()
-        if response.data:
-            return response.data[0]
-        return None
-    except Exception as e:
-        st.error(f"Error getting stored token: {str(e)}")
-        return None
+    response = supabase.table('strava_tokens').select('*').eq('athlete_id', athlete_id).execute()
+    if response.data:
+        return response.data[0]
+    return None
 
 def ensure_fresh_token():
     """Ensure we have a valid token"""
-    if 'athlete_id' not in st.session_state or st.session_state.athlete_id is None:
+    if 'athlete_id' not in st.session_state:
         return None
         
     stored_token = get_stored_token(st.session_state.athlete_id)
@@ -194,17 +178,13 @@ def ensure_fresh_token():
     expires_at = datetime.fromisoformat(stored_token['expires_at'].replace('Z', '+00:00'))
     if expires_at <= datetime.now(timezone.utc):
         # Token is expired, refresh it
-        try:
-            new_token = refresh_token(stored_token['refresh_token'])
-            new_token['athlete_id'] = stored_token['athlete_id']
+        new_token = refresh_token(stored_token['refresh_token'])
+        new_token['athlete_id'] = stored_token['athlete_id']
 
-            if 'access_token' in new_token:
-                save_token_to_supabase(new_token)
-                return new_token['access_token']
-            return None
-        except Exception as e:
-            st.error(f"Error refreshing token: {str(e)}")
-            return None
+        if 'access_token' in new_token:
+            save_token_to_supabase(new_token)
+            return new_token['access_token']
+        return None
         
     return stored_token['access_token']
 
@@ -714,20 +694,23 @@ def main():
         event_data={'session_id': st.session_state.get('session_id')}
     )
     df = None
+    # Initialize session state
+    if 'access_token' not in st.session_state:
+        st.session_state.access_token = None
+    if 'athlete_id' not in st.session_state:
+        st.session_state.athlete_id = None
 
-    # Try to get a fresh token
-    fresh_token = ensure_fresh_token()
-    if fresh_token:
-        st.session_state.access_token = fresh_token
-        if 'athlete_id' not in st.session_state:
-            # Get athlete_id from Supabase
-            stored_token = get_stored_token(st.session_state.athlete_id)
-            if stored_token:
-                st.session_state.athlete_id = stored_token['athlete_id']
-    else:
-        st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
-        st.markdown("[Connecta amb Strava](/Inici)")
-        st.stop()
+    # Try to get stored token if we don't have one in session
+    if st.session_state.access_token is None:
+        # Try to get a fresh token for this athlete
+        fresh_token = ensure_fresh_token()
+        if fresh_token:
+            st.session_state.access_token = fresh_token
+            st.rerun()
+        else:
+            st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
+            st.markdown("[Connecta amb Strava](/landing)")
+            st.stop()
 
     activities = get_activities(st.session_state.access_token)
     if activities:
@@ -1054,11 +1037,11 @@ def main():
         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;">
-                    <h5>❔ La distància dependrà del teu nivell i objectiu, però el més important és començar amb una distància que et permeti progressar setmana a setmana.</h5>
-                    <h5>💭 Una forma de comprovar això és mantenir la distància d'aquesta sortida <strong>entre el 30% i el 40% del total setmanal</strong>.</h5>
+                    <h5>La distància dependrà del teu nivell i objectiu, però el més important és començar amb una distància que et permeti progressar setmana a setmana.</h5>
+                    <h5>Una forma de comprovar això és mantenir la distància d'aquesta sortida <strong>entre el 30% i el 40% del total setmanal</strong>.</h5>
                 </div>
                 <div style="flex: 1;">
-                    <h5>🔄 Incrementar la distància setmana a setmana amb ritmes semblants és un bon indicador de que estàs millorant.</h5>
+                    <h5>Incrementar la distància setmana a setmana amb ritmes semblants és un bon indicador de que estàs millorant.</h5>
                 </div>
             </div>
         </div>
@@ -1129,7 +1112,7 @@ def main():
         col1_long, col2_long = st.columns([0.7, 0.3])
         
         with col1_long:
-            st.write("**Sessió més llarga per setmana i % del total de distància setmanal (de més recent a més antiga)**")
+            st.write("**Sessió més llarga per setmana i % del total de distància setmanal**")
             st.dataframe(
                 longest_runs_display.style
                 .apply(lambda col: col.map(style_race_activities) if col.name == 'Nom' else [''] * len(col))
@@ -1633,7 +1616,10 @@ def main():
 
 
 if __name__ == "__main__":
-    # Place the disconnect button at the top right
+    # Generate a unique session ID when the app starts
+    if 'session_id' not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
+        # Place the disconnect button at the top right
     if st.session_state.access_token:
         cols = st.columns([8, 1])
         with cols[1]:
