@@ -107,7 +107,7 @@ def main():
             max-width: 100% !important;
             padding: 0 !important;
             margin: 0px !important;
-            background-color: rgba(207, 240, 17, 0.27) !important;
+            background-color: rgba(255, 255, 255, 0.5) !important;
         }
         /* Remove all default padding and margins */
         .stApp > header {
