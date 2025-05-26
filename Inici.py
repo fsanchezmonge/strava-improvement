@@ -200,7 +200,7 @@ def main():
                         event_data={'athlete_id': token_response['athlete']['id']}
                     )
                     # Redirect to main app
-                    st.switch_page("pages/Anàlisi.py")
+                    st.switch_page("pages/Analisi.py")
                 else:
                     # Log failed authorization
                     log_user_session(
