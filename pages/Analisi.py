@@ -730,15 +730,9 @@ def main():
         event_data={'session_id': st.session_state.get('session_id')}
     )
     
-    # Debug information (temporary, remove in production)
-    st.write("Debug info:")
-    st.write(f"Access token exists: {st.session_state.access_token is not None}")
-    st.write(f"Athlete ID exists: {st.session_state.athlete_id is not None}")
-    
     # Check for authorization code in URL parameters
     query_params = st.query_params
     if 'code' in query_params:
-        st.write("Debug - Found authorization code in URL")
         code = query_params.get("code", [])
         try:
             token_data = get_token(code)

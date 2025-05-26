@@ -192,10 +192,6 @@ def main():
                     st.session_state.access_token = token_response['access_token']
                     st.session_state.athlete_id = token_response['athlete']['id']
                     
-                    # Debug information
-                    st.write("Debug - Token received and stored in session state")
-                    st.write(f"Athlete ID: {token_response['athlete']['id']}")
-                    
                     # Save token to Supabase
                     save_token_to_supabase(token_response)
                     
