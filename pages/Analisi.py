@@ -145,18 +145,35 @@ def refresh_token(refresh_token):
 
 def save_token_to_supabase(token_data):
     """Save or update token in Supabase"""
-    token_record = {
-        'athlete_id': token_data['athlete']['id'],
-        'access_token': token_data['access_token'],
-        'refresh_token': token_data['refresh_token'],
-        'expires_at': datetime.fromtimestamp(token_data['expires_at'], tz=timezone.utc).isoformat(),
-        'updated_at': datetime.now(timezone.utc).isoformat()
-    }
-    
-    supabase.table('strava_tokens').upsert(
-        token_record,
-        on_conflict='athlete_id'
-    ).execute()
+    try:
+        token_record = {
+            'athlete_id': token_data['athlete']['id'],
+            'access_token': token_data['access_token'],
+            'refresh_token': token_data['refresh_token'],
+            'expires_at': datetime.fromtimestamp(token_data['expires_at'], tz=timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Debug information (temporary, remove in production)
+        st.write("Debug - Saving token to Supabase:")
+        st.write(f"Athlete ID: {token_record['athlete_id']}")
+        st.write(f"Token expires at: {token_record['expires_at']}")
+        
+        supabase.table('strava_tokens').upsert(
+            token_record,
+            on_conflict='athlete_id'
+        ).execute()
+        
+        # Verify the token was saved
+        stored_token = get_stored_token(token_record['athlete_id'])
+        if stored_token:
+            st.write("Debug - Token successfully saved to Supabase")
+        else:
+            st.write("Debug - Failed to verify token was saved to Supabase")
+            
+    except Exception as e:
+        st.error(f"Error saving token to Supabase: {str(e)}")
+        raise
 
 def get_stored_token(athlete_id):
     """Get stored token from Supabase"""
@@ -733,6 +750,11 @@ def main():
 
     df = None
     
+    # Debug information (temporary, remove in production)
+    st.write("Debug info:")
+    st.write(f"Access token exists: {st.session_state.access_token is not None}")
+    st.write(f"Athlete ID exists: {st.session_state.athlete_id is not None}")
+    
     # Try to get stored token if we don't have one in session
     if not st.session_state.access_token and st.session_state.athlete_id is not None:
         # Try to get a fresh token for this athlete
@@ -742,11 +764,11 @@ def main():
             st.rerun()
         else:
             st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
-            st.markdown("[Connecta amb Strava](/landing)")
+            st.markdown("[Connecta amb Strava](/Inici)")
             st.stop()
     elif not st.session_state.access_token:
         st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
-        st.markdown("[Connecta amb Strava](/landing)")
+        st.markdown("[Connecta amb Strava](/Inici)")
         st.stop()
 
     activities = get_activities(st.session_state.access_token)
