@@ -1,12 +1,18 @@
 import streamlit as st
 import os
-from dotenv import load_dotenv
 import base64
 import pathlib
 import requests
 from datetime import datetime, timezone
 from supabase import create_client, Client
 import uuid
+
+# Try to import dotenv, but don't fail if it's not available
+try:
+    from dotenv import load_dotenv
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
 
 st.set_page_config(
     page_title="Analitza el teu entrenament",
@@ -16,11 +22,8 @@ st.set_page_config(
 )
 
 # Load environment variables only in local development
-try:
-    if os.path.exists('.env'):
-        load_dotenv()
-except Exception as e:
-    st.warning("Could not load .env file - this is normal in production environments")
+if DOTENV_AVAILABLE and os.path.exists('.env'):
+    load_dotenv()
 
 # Initialize Supabase client
 url: str = st.secrets.get("SUPABASE_URL")

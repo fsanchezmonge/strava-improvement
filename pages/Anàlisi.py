@@ -3,7 +3,6 @@ import requests
 import pandas as pd
 from datetime import datetime, timezone
 import os
-from dotenv import load_dotenv
 from supabase import create_client, Client
 import plotly.graph_objects as go
 import time
@@ -85,8 +84,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Load environment variables
-load_dotenv()
 
 # Initialize Supabase client
 url: str = st.secrets.get("SUPABASE_URL")
