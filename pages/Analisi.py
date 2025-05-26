@@ -707,15 +707,6 @@ def log_user_session(athlete_id: Optional[int], event_type: str, event_data: Opt
         st.error(f"Error logging event: {str(e)}")
 
 def main():
-    # Check for access token in query params and set it in session state if present
-    if 'access_token' in st.query_params and 'athlete_id' in st.query_params:
-        st.session_state.access_token = st.query_params['access_token']
-        st.session_state.athlete_id = int(st.query_params['athlete_id'])
-        # Clear the query params after setting them in session state
-        st.query_params.clear()
-        # Force a rerun to ensure session state is properly set
-        st.rerun()
-    
     # Log app open at the start of main with athlete_id=0 if not authenticated
     log_user_session(
         athlete_id=st.session_state.get('athlete_id', 0),  # Default to 0 if not authenticated
@@ -724,17 +715,19 @@ def main():
     )
     df = None
 
-    # Try to get stored token if we don't have one in session
-    if not st.session_state.get('access_token'):
-        # Try to get a fresh token for this athlete
-        fresh_token = ensure_fresh_token()
-        if fresh_token:
-            st.session_state.access_token = fresh_token
-            st.rerun()
-        else:
-            st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
-            st.markdown("[Connecta amb Strava](/Inici)")
-            st.stop()
+    # Try to get a fresh token
+    fresh_token = ensure_fresh_token()
+    if fresh_token:
+        st.session_state.access_token = fresh_token
+        if 'athlete_id' not in st.session_state:
+            # Get athlete_id from Supabase
+            stored_token = get_stored_token(st.session_state.athlete_id)
+            if stored_token:
+                st.session_state.athlete_id = stored_token['athlete_id']
+    else:
+        st.warning("Si us plau, connecta amb Strava primer a la pàgina d'inici.")
+        st.markdown("[Connecta amb Strava](/Inici)")
+        st.stop()
 
     activities = get_activities(st.session_state.access_token)
     if activities:

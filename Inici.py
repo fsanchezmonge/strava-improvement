@@ -188,22 +188,17 @@ def main():
             try:
                 token_response = get_token(code)
                 if 'access_token' in token_response:
+                    # Save token to Supabase first
+                    save_token_to_supabase(token_response)
                     # Store token in session state
                     st.session_state.access_token = token_response['access_token']
                     st.session_state.athlete_id = token_response['athlete']['id']
-                    # Save token to Supabase
-                    save_token_to_supabase(token_response)
                     # Log successful authorization
                     log_user_session(
                         athlete_id=token_response['athlete']['id'],
                         event_type='auth_success',
                         event_data={'athlete_id': token_response['athlete']['id']}
                     )
-                    # Store token in query params to persist across page switch
-                    st.query_params["access_token"] = token_response['access_token']
-                    st.query_params["athlete_id"] = str(token_response['athlete']['id'])
-                    # Force a rerun to ensure session state is updated
-                    st.rerun()
                     # Redirect to main app
                     st.switch_page("pages/Anàlisi.py")
                 else:
