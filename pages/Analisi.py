@@ -154,11 +154,6 @@ def save_token_to_supabase(token_data):
             'updated_at': datetime.now(timezone.utc).isoformat()
         }
         
-        # Debug information (temporary, remove in production)
-        st.write("Debug - Saving token to Supabase:")
-        st.write(f"Athlete ID: {token_record['athlete_id']}")
-        st.write(f"Token expires at: {token_record['expires_at']}")
-        
         supabase.table('strava_tokens').upsert(
             token_record,
             on_conflict='athlete_id'
@@ -166,11 +161,7 @@ def save_token_to_supabase(token_data):
         
         # Verify the token was saved
         stored_token = get_stored_token(token_record['athlete_id'])
-        if stored_token:
-            st.write("Debug - Token successfully saved to Supabase")
-        else:
-            st.write("Debug - Failed to verify token was saved to Supabase")
-            
+
     except Exception as e:
         st.error(f"Error saving token to Supabase: {str(e)}")
         raise
