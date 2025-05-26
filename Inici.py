@@ -199,6 +199,9 @@ def main():
                         event_type='auth_success',
                         event_data={'athlete_id': token_response['athlete']['id']}
                     )
+                    # Store token in query params to persist across page switch
+                    st.query_params["access_token"] = token_response['access_token']
+                    st.query_params["athlete_id"] = str(token_response['athlete']['id'])
                     # Redirect to main app
                     st.switch_page("pages/Anàlisi.py")
                 else:

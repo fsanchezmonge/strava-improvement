@@ -687,6 +687,13 @@ def log_user_session(athlete_id: Optional[int], event_type: str, event_data: Opt
         st.error(f"Error logging event: {str(e)}")
 
 def main():
+    # Check for access token in query params and set it in session state if present
+    if 'access_token' in st.query_params and 'athlete_id' in st.query_params:
+        st.session_state.access_token = st.query_params['access_token']
+        st.session_state.athlete_id = int(st.query_params['athlete_id'])
+        # Clear the query params after setting them in session state
+        st.query_params.clear()
+    
     # Log app open at the start of main with athlete_id=0 if not authenticated
     log_user_session(
         athlete_id=st.session_state.get('athlete_id', 0),  # Default to 0 if not authenticated
