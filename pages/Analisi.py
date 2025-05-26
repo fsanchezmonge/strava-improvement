@@ -730,30 +730,26 @@ def main():
         event_data={'session_id': st.session_state.get('session_id')}
     )
     
-    # Add disconnect button at the top if authenticated
-    if st.session_state.access_token:
-        cols = st.columns([8, 1])
-        with cols[1]:
-            if st.button("Desconnectar", type="secondary", help="L'aplicació deixarà de tenir permisos per accedir al teu perfil."):
-                response = requests.post(
-                    "https://www.strava.com/oauth/deauthorize",
-                    headers={"Authorization": f"Bearer {st.session_state.access_token}"}
-                )
-                if response.status_code == 200:
-                    supabase.table('strava_tokens').delete().eq('athlete_id', st.session_state.athlete_id).execute()
-                    st.success("Has desconnectat Strava correctament.")
-                    st.session_state.access_token = None
-                    st.session_state.athlete_id = None
-                    st.switch_page("Inici.py")
-                else:
-                    st.error("Error desconnectant Strava.")
-
-    df = None
-    
     # Debug information (temporary, remove in production)
     st.write("Debug info:")
     st.write(f"Access token exists: {st.session_state.access_token is not None}")
     st.write(f"Athlete ID exists: {st.session_state.athlete_id is not None}")
+    
+    # Check for authorization code in URL parameters
+    query_params = st.query_params
+    if 'code' in query_params:
+        st.write("Debug - Found authorization code in URL")
+        code = query_params.get("code", [])
+        try:
+            token_data = get_token(code)
+            if 'access_token' in token_data:
+                st.session_state.access_token = token_data['access_token']
+                st.session_state.athlete_id = token_data['athlete']['id']
+                save_token_to_supabase(token_data)
+                st.query_params.clear()
+                st.rerun()
+        except Exception as e:
+            st.error(f"Error during token exchange: {str(e)}")
     
     # Try to get stored token if we don't have one in session
     if not st.session_state.access_token and st.session_state.athlete_id is not None:
