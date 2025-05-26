@@ -686,6 +686,14 @@ def log_user_session(athlete_id: Optional[int], event_type: str, event_data: Opt
     except Exception as e:
         st.error(f"Error logging event: {str(e)}")
 
+# Initialize session state variables at the very beginning of the script, right after the imports
+if 'access_token' not in st.session_state:
+    st.session_state.access_token = None
+if 'athlete_id' not in st.session_state:
+    st.session_state.athlete_id = None
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
 def main():
     # Log app open at the start of main with athlete_id=0 if not authenticated
     log_user_session(
@@ -693,6 +701,25 @@ def main():
         event_type='app_open',
         event_data={'session_id': st.session_state.get('session_id')}
     )
+    
+    # Add disconnect button at the top if authenticated
+    if st.session_state.access_token:
+        cols = st.columns([8, 1])
+        with cols[1]:
+            if st.button("Desconnectar", type="secondary", help="L'aplicació deixarà de tenir permisos per accedir al teu perfil."):
+                response = requests.post(
+                    "https://www.strava.com/oauth/deauthorize",
+                    headers={"Authorization": f"Bearer {st.session_state.access_token}"}
+                )
+                if response.status_code == 200:
+                    supabase.table('strava_tokens').delete().eq('athlete_id', st.session_state.athlete_id).execute()
+                    st.success("Has desconnectat Strava correctament.")
+                    st.session_state.access_token = None
+                    st.session_state.athlete_id = None
+                    st.switch_page("Inici.py")
+                else:
+                    st.error("Error desconnectant Strava.")
+
     df = None
     # Initialize session state
     if 'access_token' not in st.session_state:
@@ -1616,24 +1643,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # Generate a unique session ID when the app starts
-    if 'session_id' not in st.session_state:
-        st.session_state.session_id = str(uuid.uuid4())
-        # Place the disconnect button at the top right
-    if st.session_state.access_token:
-        cols = st.columns([8, 1])
-        with cols[1]:
-            if st.button("Desconnectar", type="secondary",help="L'aplicació deixarà de tenir permisos per accedir al teu perfil."):
-                response = requests.post(
-                    "https://www.strava.com/oauth/deauthorize",
-                    headers={"Authorization": f"Bearer {st.session_state.access_token}"}
-                )
-                if response.status_code == 200:
-                    supabase.table('strava_tokens').delete().eq('athlete_id', st.session_state.athlete_id).execute()
-                    st.success("Has desconnectat Strava correctament.")
-                    st.session_state.access_token = None
-                    st.session_state.athlete_id = None
-                    st.switch_page("Inici.py")
-                else:
-                    st.error("Error desconnectant Strava.")
     main()
