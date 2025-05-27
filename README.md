@@ -1,6 +1,6 @@
-# Strava Activity Tracker
+# Strava Training Analysis
 
-A Streamlit application that connects to your Strava account and displays an interactive analysis of your training leading up to an event. The dates of the analysed period can be modified by the user. The app uses Supabase to store refresh tokens and athlete ids.
+A Streamlit application that connects to your Strava account and displays an interactive analysis of your training leading up to an event. The dates of the analysed period can be modified by the user. The app uses Supabase to store refresh tokens and athlete ids, but activities are not permantently stored.
 
 ## Setup Instructions
 
@@ -42,4 +42,4 @@ A Streamlit application that connects to your Strava account and displays an int
 
 1. Click the "Connect with Strava" button
 2. Authorize the application
-3. Your activities will be displayed in a table and stored in Supabase
+3. The analysis will be performed for the dates and sports selected, providing context on the visuals and metrics shown.
