@@ -11,6 +11,7 @@ import pathlib
 import uuid
 from typing import Optional
 import base64
+import openai
 
 st.set_page_config(
     page_title="Analitza el teu entrenament",
@@ -104,6 +105,14 @@ STRAVA_CLIENT_SECRET = st.secrets.get("STRAVA_CLIENT_SECRET", os.getenv("STRAVA_
 if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
     st.error("Missing Strava API credentials. Please check your environment variables or secrets.")
     st.stop()
+
+# OpenAI API configuration
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+if not OPENAI_API_KEY:
+    st.error("Missing OpenAI API key. Please check your environment variables or secrets.")
+    st.stop()
+
+openai.api_key = OPENAI_API_KEY
 
 # Update the REDIRECT_URI logic
 if 'REDIRECT_URI' in st.secrets:
@@ -589,8 +598,32 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
 
     # Display all messages together below the columns
     #st.markdown("### Recomanacions:")
-    with st.container(border=True):
-        st.markdown("\n".join(messages))
+    with st.container(border=False):
+        # Convert messages to a single string
+        messages_text = "\n".join(messages)
+        
+        # Call OpenAI API to generate a coherent message
+        try:
+            client = openai.OpenAI()
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Ets un entrenador de running que parla català. El teu estil és motivador i constructiu. Rebràs tres missatges referents a l'entrenament d'un atleta per una prova i que fan referència al volum, freqüència i la intensitat de les setmanes prèvies a la prova."},
+                    {"role": "user", "content": f"Converteix aquestes recomanacions en un missatge coherent i instructiu en català que resumeixi les recomanacions i aporti informació útil:\n\n{messages_text}. Fes un text curt i senzill, no més de 100 paraules.No utilitzis valors concrets, només recomanacions basades en els missatges rebuts i informació general sobre entrenament."}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            # Display the generated message
+            st.markdown(f"""
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                <h5>{response.choices[0].message.content}</h5>
+            </div>
+            """, unsafe_allow_html=True)
+        except Exception as e:
+            # Fallback to original messages if API call fails
+            st.markdown("\n".join(messages))
 
 def get_segments_data(activities, get_activity_details, get_segment_details, access_token):
     """

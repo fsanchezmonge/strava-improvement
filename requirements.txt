@@ -5,3 +5,4 @@ python-dotenv==1.0.1
 supabase==2.4.5
 plotly==5.19.0
 pathlib==1.0.1
+openai==1.82.0
