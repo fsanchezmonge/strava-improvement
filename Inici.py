@@ -454,7 +454,7 @@ def main():
             </div>
         """, unsafe_allow_html=True)
     with col2v:
-        st.video(video_path)
+        st.video(video_path, loop=True, autoplay=True, muted=True)
 
     st.write("")
     col1, col2, col3 = st.columns(3)
@@ -468,5 +468,8 @@ def main():
         </div>""", 
         unsafe_allow_html=True
     )
+    st.write("")
+    st.write("")
+    st.caption("Created by Fernando Sanchez-Monge Perez")
 if __name__ == "__main__":
     main()
