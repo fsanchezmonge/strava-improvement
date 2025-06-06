@@ -454,7 +454,7 @@ def main():
             </div>
         """, unsafe_allow_html=True)
     with col2v:
-        st.video(video_path, loop=True, autoplay=True, muted=True)
+        st.video(video_path)
 
     st.write("")
     col1, col2, col3 = st.columns(3)
