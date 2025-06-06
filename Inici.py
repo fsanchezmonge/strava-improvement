@@ -438,8 +438,8 @@ def main():
     video_path = f"{current_dir}/assets/screen_recording.mp4"
     st.write("")
     st.write("")
-    col1v, col2v = st.columns(2)
-    with col1v: 
+    col2v, col3v, col4v = st.columns([0.5,0.4,0.1])
+    with col2v: 
         st.write("")
         st.write("")
         st.write("")
@@ -453,7 +453,7 @@ def main():
                 </div>
             </div>
         """, unsafe_allow_html=True)
-    with col2v:
+    with col3v:
         st.video(video_path)
 
     st.write("")
