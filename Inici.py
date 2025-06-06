@@ -149,7 +149,7 @@ def main():
             color: #393E46;
             font-weight: bold;
             margin-top: 10px;
-            margin-bottom: 50px;
+            margin-bottom: 20px;
         }
         h4 {
             font-family: 'Helvetica Neue', sans-serif;
@@ -377,15 +377,27 @@ def main():
     st.markdown("""
         <style>
         .video-section {
-            width: 80%;
-            padding: 20px 20px;
+            width: 100%;
+            padding: 40px 20px;
             background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.9));
             margin: 0px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .description-column {
+            flex: 1;
+            padding: 0 40px;
+        }
+        .video-column {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .video-container {
-            width: 80%;
-            max-width: 1000px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 800px;
             position: relative;
             border-radius: 10px;
             overflow: hidden;
@@ -393,8 +405,7 @@ def main():
             background: #000;
         }
         .video-title {
-            text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 30px;
         }
         .video-title h2 {
             font-family: 'Helvetica Neue', sans-serif;
@@ -406,8 +417,6 @@ def main():
             font-family: 'Helvetica Neue', sans-serif;
             font-size: 18px;
             color: #393E46;
-            max-width: 600px;
-            margin: 0 auto;
             line-height: 1.6;
         }
         .stVideo {
@@ -416,33 +425,44 @@ def main():
             width: 100% !important;
         }
         .stVideo > div {
-            width: 80% !important;
+            width: 100% !important;
         }
         .stVideo > div > video {
-            width: 80% !important;
+            width: 100% !important;
             height: auto !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # Video section with title and description
-    st.markdown("""
-        <div class="video-section">
-            <div class="video-title">
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
     # Video path
     video_path = f"{current_dir}/assets/screen_recording.mov"
     
-    # Check if video exists and display it
+    # Check if video exists and display it in the right column using HTML <video> tag
+    video_html = ""
     if os.path.exists(video_path):
-        st.markdown('<div class="video-container">', unsafe_allow_html=True)
-        st.video(video_path)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with open(video_path, "rb") as f:
+            video_data = f.read()
+            b64_video = base64.b64encode(video_data).decode("utf-8")
+        video_html = f'''<video controls style="width:100%; border-radius:10px; background:#000;">
+            <source src="data:video/mp4;base64,{b64_video}" type="video/mp4">
+            El teu navegador no suporta el vídeo.
+        </video>'''
     else:
-        st.warning("Please add a video file named 'screen_recording.mov' in the assets folder.")
+        video_html = "<div style='color: #c00;'>Please add a video file named 'screen_recording.mov' in the assets folder.</div>"
+
+    st.markdown(f"""
+        <div class="video-section">
+            <div class="description-column">
+                <div class="video-title">
+                    <h3>Comença a fer servir les teves dades sense complicacions</h3>
+                    <p>Connecta amb el teu perfil d'Strava i comprova si estàs complint alguns principis bàsics de l'entrenament durant el període que seleccionis.</p>
+                </div>
+            </div>
+            <div class="video-column">
+                {video_html}
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.write("")
     col1, col2, col3 = st.columns(3)
