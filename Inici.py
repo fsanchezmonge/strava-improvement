@@ -435,34 +435,26 @@ def main():
     """, unsafe_allow_html=True)
 
     # Video path
-    video_path = f"{current_dir}/assets/screen_recording.mov"
-    
-    # Check if video exists and display it in the right column using HTML <video> tag
-    video_html = ""
-    if os.path.exists(video_path):
-        with open(video_path, "rb") as f:
-            video_data = f.read()
-            b64_video = base64.b64encode(video_data).decode("utf-8")
-        video_html = f'''<video controls style="width:100%; border-radius:10px; background:#000;">
-            <source src="data:video/mp4;base64,{b64_video}" type="video/mp4">
-            El teu navegador no suporta el vídeo.
-        </video>'''
-    else:
-        video_html = "<div style='color: #c00;'>Please add a video file named 'screen_recording.mov' in the assets folder.</div>"
-
-    st.markdown(f"""
-        <div class="video-section">
-            <div class="description-column">
-                <div class="video-title">
-                    <h3>Comença a fer servir les teves dades sense complicacions</h3>
-                    <p>Connecta amb el teu perfil d'Strava i comprova si estàs complint alguns principis bàsics de l'entrenament durant el període que seleccionis.</p>
+    video_path = f"{current_dir}/assets/screen_recording.mp4"
+    st.write("")
+    st.write("")
+    col1v, col2v = st.columns(2)
+    with col1v: 
+        st.write("")
+        st.write("")
+        st.write("")
+        st.write("")
+        st.markdown(f"""
+            <div class="video-section">
+                <div class="description-column">
+                    <div class="video-title">
+                        <h5>Connecta amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i comprova si estàs complint alguns principis bàsics de l'entrenament.</h5>
+                    </div>
                 </div>
             </div>
-            <div class="video-column">
-                {video_html}
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    with col2v:
+        st.video(video_path)
 
     st.write("")
     col1, col2, col3 = st.columns(3)
