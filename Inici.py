@@ -143,11 +143,19 @@ def main():
             color: #222831;
             margin-bottom: 10px;
         }
-        h4 {
+        h3 {
             font-family: 'Helvetica Neue', sans-serif;
             font-size: 25px;
             color: #393E46;
             font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 50px;
+        }
+        h4 {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 25px;
+            color: #393E46;
+            font-weight: normal;
             margin-top: 10px;
             margin-bottom: 50px;
         }
@@ -230,7 +238,7 @@ def main():
     st.markdown("""
         <div style="text-align: center; background-color: rgba(255, 255, 255, 0.5); padding: 20px 0; margin: 0;">
             <h1>Apren els bàsics, entrena millor</h1>
-            <h5>Analitza com prepares les teves curses i descobreix què pots millorar amb consells personalitzats</h5>
+            <h4>Analitza com prepares les teves curses i descobreix què pots millorar amb consells personalitzats</h4>
         </div>
     """, unsafe_allow_html=True)
 
@@ -266,7 +274,7 @@ def main():
         }}
         </style>
         <div class="full-width-cta">
-            <p style="margin-bottom: 20px; font-weight: normal; font-family: 'Helvetica Neue', sans-serif; font-size: 16px; color: #222831;">
+            <p style="margin-bottom: 20px; font-weight: normal; font-family: 'Helvetica Neue', sans-serif; font-size: 20px; color: #222831;">
                 Connecta el teu perfil i comença
             </p>
             <a href="{AUTH_URL}" class="strava-button">
@@ -364,6 +372,78 @@ def main():
             </div>
         </div>
     """, unsafe_allow_html=True)
+
+    # Add video section
+    st.markdown("""
+        <style>
+        .video-section {
+            width: 80%;
+            padding: 20px 20px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.9));
+            margin: 0px 0;
+        }
+        .video-container {
+            width: 80%;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: #000;
+        }
+        .video-title {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .video-title h2 {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 32px;
+            color: #222831;
+            margin-bottom: 15px;
+        }
+        .video-title p {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 18px;
+            color: #393E46;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .stVideo {
+            border-radius: 10px;
+            overflow: hidden;
+            width: 100% !important;
+        }
+        .stVideo > div {
+            width: 80% !important;
+        }
+        .stVideo > div > video {
+            width: 80% !important;
+            height: auto !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Video section with title and description
+    st.markdown("""
+        <div class="video-section">
+            <div class="video-title">
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Video path
+    video_path = f"{current_dir}/assets/screen_recording.mov"
+    
+    # Check if video exists and display it
+    if os.path.exists(video_path):
+        st.markdown('<div class="video-container">', unsafe_allow_html=True)
+        st.video(video_path)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.warning("Please add a video file named 'screen_recording.mov' in the assets folder.")
+
     st.write("")
     col1, col2, col3 = st.columns(3)
     with col2:
@@ -376,7 +456,5 @@ def main():
         </div>""", 
         unsafe_allow_html=True
     )
-
-
 if __name__ == "__main__":
     main()
