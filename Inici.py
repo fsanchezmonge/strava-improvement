@@ -470,6 +470,5 @@ def main():
     )
     st.write("")
     st.write("")
-    st.caption("Created by Fernando Sanchez-Monge Perez")
 if __name__ == "__main__":
     main()
