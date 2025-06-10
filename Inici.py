@@ -275,7 +275,7 @@ def main():
         </style>
         <div class="full-width-cta">
             <p style="margin-bottom: 20px; font-weight: normal; font-family: 'Helvetica Neue', sans-serif; font-size: 20px; color: #222831;">
-                Connecta el teu perfil i comença
+                Connecta el teu perfil i prova-ho amb la teva cursa més recent
             </p>
             <a href="{AUTH_URL}" class="strava-button">
                 <img src="{svg_uri}" width="210" height="70" alt="Connect with Strava"/>
@@ -448,7 +448,7 @@ def main():
             <div class="video-section">
                 <div class="description-column">
                     <div class="video-title">
-                        <h5>Connecta amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i comprova si estàs complint alguns principis bàsics de l'entrenament.</h5>
+                        <h5>Connecta amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i accedeix a l'anàlisi que t'ajudarà a fer un entrenament més intel·ligent.</h5>
                     </div>
                 </div>
             </div>
