@@ -274,7 +274,7 @@ def main():
         }}
         </style>
         <div class="full-width-cta">
-            <p style="margin-bottom: 20px; font-weight: normal; font-family: 'Helvetica Neue', sans-serif; font-size: 20px; color: #222831;">
+            <p style="margin-bottom: 20px; font-weight: normal; font-family: 'Helvetica Neue', sans-serif; font-size: 18px; color: #222831;">
                 Prova-ho amb una cursa recent
             </p>
             <a href="{AUTH_URL}" class="strava-button">
@@ -335,9 +335,9 @@ def main():
         }}
         .column-content {{
             flex: 1;
-            margin: 0 30px;
+            margin: 0 90px;
             background: transparent;
-            padding: 60px;
+            padding: 0px;
             border-radius: 0;
             transition: all 0.3s ease;
             text-align: center;
@@ -355,18 +355,21 @@ def main():
         </style>
         <div class="full-width-bg">
             <div class="background-container">
-                <div class="content-wrapper">
-                    <div class="column-content">
-                        <h4>Volum</h4>
-                        <p>Controlar la quantitat i progressar és clau</p>
-                    </div>
-                    <div class="column-content">
-                        <h4>Freqüència</h4>
-                        <p>Comprova si estàs sent consistent</p>
-                    </div>
-                    <div class="column-content">
-                        <h4>Intensitat</h4>
-                        <p>Troba el nivell d'esforç adequat</p>
+                <div class="content-wrapper" style="flex-direction: column;">
+                    <h4 style="color: white; text-align: center; margin-bottom: 0px; font-size: 18px;">Controla tres aspectes clau d'una bona preparació</h4>
+                    <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 0px;">
+                        <div class="column-content">
+                            <h4>Volum</h4>
+                            <p>Progressa gradualment</p>
+                        </div>
+                        <div class="column-content">
+                            <h4>Freqüència</h4>
+                            <p>Comprova si ets consistent</p>
+                        </div>
+                        <div class="column-content">
+                            <h4>Intensitat</h4>
+                            <p>Troba el nivell d'esforç adequat</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -448,7 +451,7 @@ def main():
             <div class="video-section">
                 <div class="description-column">
                     <div class="video-title">
-                        <h5>Connecta't amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i descobreix com pots entrenar més intel·ligent i millorar el teu temps.</h5>
+                        <h5>Connecta el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i descobreix com pots entrenar més intel·ligent i millorar el teu temps.</h5>
                     </div>
                 </div>
             </div>
