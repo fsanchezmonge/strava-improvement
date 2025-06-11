@@ -275,7 +275,7 @@ def main():
         </style>
         <div class="full-width-cta">
             <p style="margin-bottom: 20px; font-weight: normal; font-family: 'Helvetica Neue', sans-serif; font-size: 20px; color: #222831;">
-                Prova-ho amb la teva cursa més recent
+                Prova-ho amb una cursa recent
             </p>
             <a href="{AUTH_URL}" class="strava-button">
                 <img src="{svg_uri}" width="210" height="70" alt="Connect with Strava"/>
@@ -448,7 +448,7 @@ def main():
             <div class="video-section">
                 <div class="description-column">
                     <div class="video-title">
-                        <h5>Connecta't amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i descobreix com pots fer un entrenament més intel·ligent si vols millorar el teu temps o pujar de distància.</h5>
+                        <h5>Connecta't amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i descobreix com pots entrenar més intel·ligent i millorar el teu temps.</h5>
                     </div>
                 </div>
             </div>
