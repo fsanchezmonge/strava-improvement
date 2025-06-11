@@ -448,7 +448,7 @@ def main():
             <div class="video-section">
                 <div class="description-column">
                     <div class="video-title">
-                        <h5>Connecta amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i accedeix a l'anàlisi que t'ajudarà a fer un entrenament més intel·ligent si vols millorar el teu temps o pujar de distància.</h5>
+                        <h5>Connecta't amb el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i descobreix com pots fer un entrenament més intel·ligent si vols millorar el teu temps o pujar de distància.</h5>
                     </div>
                 </div>
             </div>
