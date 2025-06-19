@@ -823,7 +823,7 @@ def main():
         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;">
-                    <h5>🔍 Per començar, selecciona el període de temps i els esports que vols incloure en l'anàlisi.</h5>
+                    <h5>🔍 Per començar, selecciona el període de temps i els esports que vols incloure a l'anàlisi.</h5>
                 </div>
                 <div style="flex: 1;">
                     <h5>📆 Recomanem un període d'<strong>entre 2 i 4 mesos</strong>, on l'últim dia seleccionat és el de la cursa que vols analitzar.</h5>
