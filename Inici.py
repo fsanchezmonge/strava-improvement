@@ -235,10 +235,11 @@ def main():
     # Display the Strava connect button and image
     #col1, col2, col3 = st.columns([1, 3, 1])
     #with col2:
+    st.write("")
     st.markdown("""
         <div style="text-align: center; background-color: rgba(255, 255, 255, 0.5); padding: 20px 0; margin: 0;">
-            <h1>Apren els bàsics, entrena millor</h1>
-            <h4>Analitza com prepares les teves curses i descobreix què pots millorar amb consells personalitzats</h4>
+            <h1>Prepara les teves curses amb sentit</h1>
+            <h4>Revisa el teu entrenament abans d'una cursa i  descobreix què pots millorar amb una anàlisi personalitzada</h4>
         </div>
     """, unsafe_allow_html=True)
 
@@ -451,7 +452,7 @@ def main():
             <div class="video-section">
                 <div class="description-column">
                     <div class="video-title">
-                        <h5>Connecta el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i descobreix com pots entrenar més intel·ligent i millorar el teu temps.</h5>
+                        <h5>Connecta el teu perfil d'<span style="background-color:#FC4C02; color:#fff; border-radius:1px; font-weight:bold; padding:1px 4px;">Strava</span> i accedeix a l'anàlisi</h5>
                     </div>
                 </div>
             </div>
