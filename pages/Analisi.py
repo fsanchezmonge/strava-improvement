@@ -537,7 +537,7 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
     """
     Display a summary of training analysis with recommendations
     """
-    st.markdown("## Resum i recomanacions")
+    st.markdown("## Resum de l'anàlisi")
     
     # Analyze each component
     volume_analysis = analyze_volume_progression(weekly_distance)
@@ -598,32 +598,32 @@ def display_training_summary(weekly_distance, weekly_sessions, df_intensity):
 
     # Display all messages together below the columns
     #st.markdown("### Recomanacions:")
-    with st.container(border=False):
-        # Convert messages to a single string
-        messages_text = "\n".join(messages)
+    # with st.container(border=False):
+    #     # Convert messages to a single string
+    #     messages_text = "\n".join(messages)
         
-        # Call OpenAI API to generate a coherent message
-        try:
-            client = openai.OpenAI()
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Ets un entrenador de running que parla català. El teu estil és motivador i constructiu. Rebràs tres missatges referents a l'entrenament d'un atleta per una prova i que fan referència al volum, freqüència i la intensitat de les setmanes prèvies a la prova."},
-                    {"role": "user", "content": f"Converteix aquestes recomanacions en un missatge coherent i instructiu en català que resumeixi les recomanacions i aporti informació útil:\n\n{messages_text}. Fes un text curt i senzill, no més de 100 paraules.No utilitzis valors concrets, només recomanacions basades en els missatges rebuts i informació general sobre entrenament."}
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
+    #     # Call OpenAI API to generate a coherent message
+    #     try:
+    #         client = openai.OpenAI()
+    #         response = client.chat.completions.create(
+    #             model="gpt-3.5-turbo",
+    #             messages=[
+    #                 {"role": "system", "content": "Ets un entrenador de running que parla català. El teu estil és motivador i constructiu. Rebràs tres missatges referents a l'entrenament d'un atleta per una prova i que fan referència al volum, freqüència i la intensitat de les setmanes prèvies a la prova."},
+    #                 {"role": "user", "content": f"Converteix aquestes recomanacions en un missatge coherent i instructiu en català que resumeixi les recomanacions i aporti informació útil:\n\n{messages_text}. Fes un text curt i senzill, no més de 100 paraules.No utilitzis valors concrets, només recomanacions basades en els missatges rebuts i informació general sobre entrenament."}
+    #             ],
+    #             temperature=0.7,
+    #             max_tokens=500
+    #         )
             
-            # Display the generated message
-            st.markdown(f"""
-            <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                <h5>{response.choices[0].message.content}</h5>
-            </div>
-            """, unsafe_allow_html=True)
-        except Exception as e:
-            # Fallback to original messages if API call fails
-            st.markdown("\n".join(messages))
+    #         # Display the generated message
+    #         st.markdown(f"""
+    #         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+    #             <h5>{response.choices[0].message.content}</h5>
+    #         </div>
+    #         """, unsafe_allow_html=True)
+    #     except Exception as e:
+    #         # Fallback to original messages if API call fails
+    #         st.markdown("\n".join(messages))
 
 def get_segments_data(activities, get_activity_details, get_segment_details, access_token):
     """
@@ -818,7 +818,11 @@ def main():
                 pd.to_datetime('now').date()
             )
         if 'selected_activity_type' not in st.session_state:
-            st.session_state.selected_activity_type = "Totes"
+            st.session_state.selected_activity_type = []
+        if 'form_submitted' not in st.session_state:
+            st.session_state.form_submitted = False
+        st.title("Anàlisi de l'entrenament:chart_with_upwards_trend:")
+        st.write("")
         st.markdown("""
         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
             <div style="display: flex; gap: 20px;">
@@ -858,15 +862,18 @@ def main():
                 if submit_dates:
                     st.session_state.date_range = selected_dates
                     st.session_state.selected_activity_type = selected_type
+                    st.session_state.form_submitted = True
+                    st.rerun()
 
-            # Check for valid session state instead of form submission
-            if 'date_range' not in st.session_state:
+            # Only show analysis if form has been submitted or if we have valid session state
+            if not st.session_state.form_submitted and not st.session_state.selected_activity_type:
+                st.info("Selecciona el període de temps, els esports que vols incloure i fes clic a 'Guardar' per començar l'anàlisi.")
                 st.stop()
 
             # Use session state values for filtering
             df['datetime_local'] = pd.to_datetime(df['datetime_local'])
             
-            if not selected_type:  # If no types selected, show all
+            if not st.session_state.selected_activity_type:  # If no types selected, show all
                 mask = (
                     (df['datetime_local'].dt.date >= pd.to_datetime(st.session_state.date_range[0]).date()) & 
                     (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date())
@@ -875,7 +882,7 @@ def main():
                 mask = (
                     (df['datetime_local'].dt.date >= pd.to_datetime(st.session_state.date_range[0]).date()) & 
                     (df['datetime_local'].dt.date <= pd.to_datetime(st.session_state.date_range[1]).date()) &
-                    (df['type'].isin(selected_type))
+                    (df['type'].isin(st.session_state.selected_activity_type))
                 )
             df_filtered = df[mask]
 
@@ -1424,11 +1431,12 @@ def main():
                     <h5>🔋 El grau d'esforç (intensitat) de cada sessió té un gran impacte en el tipus d'estímul que l'entrenament produeix al teu cos.</h5>
                 </div>
                 <div style="flex: 1;">
-                    <h5>❗️ Per a la majoria de corredors la distribució recomanada és de <span style="background-color: #90EE90;">80% del volumn a intensitat baixa</span> i <span style="background-color: #FFB6C1;">20% a intensitat alta</span>.</h5>
+                    <h5>❗️ Per a la majoria de corredors la distribució recomanada és de <span style="background-color: #90EE90;">80% del volum a intensitat baixa</span> i <span style="background-color: #FFB6C1;">20% a intensitat alta</span>.</h5>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
+        st.warning(":warning: A la versió actual només es tenen compte activitats de carrera i senderisme per aquesta secció.")
         st.markdown("""
                     ##### Per estimar la intensitat dels teus entrenaments farem servir el ritme de la cursa rápida detectada dintre del període seleccionat o el que introdueixis manualment si prefereixes fer servir un diferent.
          """)
@@ -1528,11 +1536,10 @@ def main():
 
         # After creating df_filtered, add the pace column
         df_filtered['average_pace'] = df_filtered['average_speed'].apply(speed_to_pace)
-        df_intensity, adjusted_reference_pace_str = add_intensity_index(df_filtered, race_pace, race_distance)
+        df_intensity, adjusted_reference_pace_str = add_intensity_index(df_filtered[df_filtered['sport'].isin(['Run', 'Hike'])], race_pace, race_distance)
 
         #st.dataframe(df_intensity[['datetime_local', 'average_pace', 'intensity_index', 'intensity_zone_pace', 'average_heartrate']])
         easy_percentage = compute_easy_percentage(df_intensity)
-        
         st.markdown("""
         <div style="background-color: #ffffff; padding: 20px; border-radius: 0px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
             <div style="display: flex; gap: 20px;">
@@ -1563,6 +1570,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
         st.write("")
+        st.dataframe(df_intensity)
         # Group by week and intensity zone to get counts
         intensity_by_week = df_intensity.groupby([
             df_intensity['datetime_local'].dt.isocalendar().year,
@@ -1664,13 +1672,13 @@ def main():
         display_training_summary(weekly_distance, weekly_sessions, df_intensity)
         
     # After analysis is performed (e.g., after processing selected dates), add:
-    if df is not None and len(selected_dates) == 2:
+    if df is not None and st.session_state.form_submitted:
         log_user_session(
             st.session_state.athlete_id,
             'analysis_performed',
             {
-                'date_range': [str(selected_dates[0]), str(selected_dates[1])],
-                'activity_type': selected_type,
+                'date_range': [str(st.session_state.date_range[0]), str(st.session_state.date_range[1])],
+                'activity_type': st.session_state.selected_activity_type,
                 'activities_analyzed': len(df_filtered)
             }
         )
