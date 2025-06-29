@@ -1570,7 +1570,6 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
         st.write("")
-        st.dataframe(df_intensity)
         # Group by week and intensity zone to get counts
         intensity_by_week = df_intensity.groupby([
             df_intensity['datetime_local'].dt.isocalendar().year,
